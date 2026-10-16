@@ -55,8 +55,8 @@ export interface AppCacheState {
   dbConnected?: boolean;
 }
 
-const CACHE_KEY = 'foodloop_cache_v4';
-const BROADCAST_CHANNEL_NAME = 'foodloop_cross_tab_sync_v3';
+const CACHE_KEY = 'foodloop_cache_v6';
+const BROADCAST_CHANNEL_NAME = 'foodloop_cross_tab_sync_v5';
 
 class CacheService {
   private state: AppCacheState;
@@ -108,7 +108,7 @@ class CacheService {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed.version === 4) {
+          if (parsed.version === 5) {
             return parsed;
           }
         }
@@ -118,12 +118,12 @@ class CacheService {
     }
 
     const defaultState: AppCacheState = {
-      version: 4,
+      version: 6,
       portal: null,
       role: 'shop',
       language: 'en',
-      activeShopId: 'shop-1',
-      activeNgoId: 'ngo-1',
+      activeShopId: 'ff22da9a-2623-4387-af37-6a8bb50bb19f',
+      activeNgoId: '09afa3ca-3498-4446-96f0-5b566ebdeb53',
       shops: INITIAL_SHOPS,
       ngos: INITIAL_NGOS,
       beneficiaries: INITIAL_BENEFICIARIES,
@@ -185,12 +185,12 @@ class CacheService {
       localStorage.removeItem(CACHE_KEY);
     }
     this.state = {
-      version: 4,
+      version: 6,
       portal: null,
       role: 'shop',
       language: 'en',
-      activeShopId: 'shop-1',
-      activeNgoId: 'ngo-1',
+      activeShopId: 'ff22da9a-2623-4387-af37-6a8bb50bb19f',
+      activeNgoId: '09afa3ca-3498-4446-96f0-5b566ebdeb53',
       shops: INITIAL_SHOPS,
       ngos: INITIAL_NGOS,
       beneficiaries: INITIAL_BENEFICIARIES,
@@ -243,6 +243,10 @@ class CacheService {
     donations?: Donation[];
     sponsorships?: Sponsorship[];
     auditLogs?: AuditLog[];
+    rawMaterials?: RawMaterial[];
+    itemIntelligence?: ItemIntelligenceRecord[];
+    recipes?: Recipe[];
+    forecasts?: DemandForecast[];
   }) {
     if (data.shops && data.shops.length > 0) {
       this.state.shops = data.shops;
@@ -256,22 +260,34 @@ class CacheService {
         this.state.activeNgoId = this.state.ngos[0].id;
       }
     }
-    if (data.beneficiaries && data.beneficiaries.length > 0) {
+    if (data.beneficiaries !== undefined) {
       this.state.beneficiaries = data.beneficiaries;
     }
-    if (data.volunteers && data.volunteers.length > 0) {
+    if (data.volunteers !== undefined) {
       this.state.volunteers = data.volunteers;
     }
-    if (data.donations && data.donations.length > 0) {
+    if (data.donations !== undefined) {
       this.state.donations = data.donations;
     }
-    if (data.sponsorships && data.sponsorships.length > 0) {
+    if (data.sponsorships !== undefined) {
       this.state.sponsorships = data.sponsorships;
     }
     if (data.auditLogs && data.auditLogs.length > 0) {
       const existingIds = new Set(this.state.auditLogs.map(a => a.id));
       const freshLogs = data.auditLogs.filter(a => !existingIds.has(a.id));
       this.state.auditLogs = [...freshLogs, ...this.state.auditLogs].slice(0, 60);
+    }
+    if (data.rawMaterials && data.rawMaterials.length > 0) {
+      this.state.rawMaterials = data.rawMaterials;
+    }
+    if (data.itemIntelligence && data.itemIntelligence.length > 0) {
+      this.state.itemIntelligence = data.itemIntelligence;
+    }
+    if (data.recipes && data.recipes.length > 0) {
+      this.state.recipes = data.recipes;
+    }
+    if (data.forecasts && data.forecasts.length > 0) {
+      this.state.forecasts = data.forecasts;
     }
     this.state.dbConnected = true;
     this.save(this.state);

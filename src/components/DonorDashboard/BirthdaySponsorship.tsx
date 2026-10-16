@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  HeartHandshake, 
-  Sparkles, 
-  Calendar, 
-  MapPin, 
-  Gift, 
-  CheckCircle2, 
+import {
+  HeartHandshake,
+  Sparkles,
+  Calendar,
+  MapPin,
+  Gift,
+  CheckCircle2,
   Download,
   Info,
   Award,
@@ -34,7 +34,7 @@ export const BirthdaySponsorship: React.FC<BirthdaySponsorshipProps> = ({ onView
   const [preferredDate, setPreferredDate] = useState('2026-10-25');
   const [preferredCity, setPreferredCity] = useState<'Mathura' | 'Vrindavan' | 'Barsana'>('Vrindavan');
   const [mealsCount, setMealsCount] = useState<number>(300);
-  const [beneficiaryTarget, setBeneficiaryTarget] = useState('ben-1');
+  const [beneficiaryTarget, setBeneficiaryTarget] = useState(state.beneficiaries[0]?.id || 'effc569d-b896-4ace-8b24-72f9ab9d6afd');
   const [dedicationMessage, setDedicationMessage] = useState(
     'On the auspicious 7th birthday of Keshav. May Lord Krishna grant him health and compassion.'
   );
@@ -109,8 +109,8 @@ export const BirthdaySponsorship: React.FC<BirthdaySponsorshipProps> = ({ onView
   const occasionOptions = [
     { id: 'Birthday Celebration', labelEn: 'Birthday Celebration', labelHi: 'जन्मदिन उत्सव' },
     { id: 'Wedding Anniversary', labelEn: 'Wedding Anniversary', labelHi: 'वैवाहिक वर्षगांठ' },
-    { id: 'Punya Tithi / In Loving Memory', labelEn: 'In Loving Memory', labelHi: 'पावन पुण्यतिथि' },
-    { id: 'Thanksgiving / Shukrana', labelEn: 'Thanksgiving / Shukrana', labelHi: 'शुकराना व कृतज्ञता' }
+    { id: 'Punya Tithi', labelEn: 'In Loving Memory', labelHi: 'पावन पुण्यतिथि' },
+    { id: 'Thanksgiving', labelEn: 'Thanksgiving', labelHi: 'शुकराना' }
   ];
 
   return (

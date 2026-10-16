@@ -21,7 +21,7 @@ export const NgoHome: React.FC = () => {
   const isHindi = state.language === 'hi';
 
   const currentNgo = state.ngos.find(n => n.id === state.activeNgoId) || state.ngos[0];
-  const [selectedVolunteer, setSelectedVolunteer] = useState(state.volunteers[0].id);
+  const [selectedVolunteer, setSelectedVolunteer] = useState(state.volunteers[0]?.id || 'd40e3757-896f-4108-bba6-53059f846cba');
   const [ngoTab, setNgoTab] = useState<'available' | 'claimed'>('available');
   const [claimedModal, setClaimedModal] = useState<{
     donation: Donation;
@@ -36,8 +36,32 @@ export const NgoHome: React.FC = () => {
   );
 
   const claimedDonations = state.donations.filter(d =>
-    d.matchedNgoId === currentNgo.id || d.status === 'MATCHED' || d.status === 'COLLECTED' || d.status === 'DELIVERED'
+    (currentNgo && d.matchedNgoId === currentNgo.id) || d.status === 'MATCHED' || d.status === 'COLLECTED' || d.status === 'DELIVERED'
   );
+
+  if (!currentNgo) {
+    return (
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <div className="glass-panel" style={{ padding: '36px', maxWidth: '440px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid #e2e8f0',
+            borderTop: '3px solid var(--color-primary)',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', marginBottom: '6px' }}>
+            {isHindi ? 'लाइव डेटाबेस से लोड हो रहा है...' : 'Connecting to live database...'}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+            {isHindi ? 'कृपया प्रतीक्षा करें, वास्तविक डेटा प्राप्त किया जा रहा है' : 'Please wait, fetching verified records from PostgreSQL'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleAcceptMatch = (donation: Donation) => {
     // Run smart matching
@@ -50,10 +74,10 @@ export const NgoHome: React.FC = () => {
     cache.updateDonationStatus(donation.id, 'MATCHED', {
       matchedNgoId: currentNgo.id,
       matchedNgoName: currentNgo.name,
-      targetBeneficiaryId: topMatch?.beneficiary.id || 'ben-1',
+      targetBeneficiaryId: topMatch?.beneficiary.id || state.beneficiaries[0]?.id || 'effc569d-b896-4ace-8b24-72f9ab9d6afd',
       targetBeneficiaryName: beneficiaryName,
-      assignedVolunteerId: volunteer.id,
-      assignedVolunteerName: volunteer.name,
+      assignedVolunteerId: volunteer?.id || state.volunteers[0]?.id || 'd40e3757-896f-4108-bba6-53059f846cba',
+      assignedVolunteerName: volunteer?.name || state.volunteers[0]?.name || 'Arun Sharma',
       distanceKm: topMatch?.distanceKm || 2.1,
       estimatedTravelTimeMin: topMatch?.estimatedTravelTimeMin || 12,
       otpCode: generatedOtp

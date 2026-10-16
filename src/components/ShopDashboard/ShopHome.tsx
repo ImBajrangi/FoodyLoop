@@ -41,9 +41,33 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
   const [otpErrorMessage, setOtpErrorMessage] = useState<{ [key: string]: string | null }>({});
 
   const shopDonations = state.donations.filter(d => 
-    d.donorShopId === currentShop.id || 
-    d.donorShopName.toLowerCase() === currentShop.name.toLowerCase()
+    (currentShop && d.donorShopId === currentShop.id) || 
+    (currentShop && d.donorShopName?.toLowerCase() === currentShop.name?.toLowerCase())
   );
+
+  if (!currentShop) {
+    return (
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <div className="glass-panel" style={{ padding: '36px', maxWidth: '440px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid #e2e8f0',
+            borderTop: '3px solid var(--color-primary)',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', marginBottom: '6px' }}>
+            {isHindi ? 'लाइव डेटाबेस से लोड हो रहा है...' : 'Connecting to live database...'}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+            {isHindi ? 'कृपया प्रतीक्षा करें, वास्तविक डेटा प्राप्त किया जा रहा है' : 'Please wait, fetching verified records from PostgreSQL'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleVerifyOtp = (donationId: string) => {
     const targetDonation = shopDonations.find(d => d.id === donationId);

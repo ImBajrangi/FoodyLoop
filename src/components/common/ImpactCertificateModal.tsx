@@ -75,7 +75,7 @@ export const ImpactCertificateModal: React.FC<ImpactCertificateModalProps> = ({ 
           </h2>
 
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-            Pilot Corridor: Mathura - Vrindavan - Barsana • FSSAI Partner Verified
+            Pilot Corridor: India • FSSAI Partner Verified
           </p>
 
           <div style={{

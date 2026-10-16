@@ -44,9 +44,9 @@ export async function simulateAtomicClaimRaceCondition(donationId: string): Prom
   if (currentDonation && currentDonation.status === 'AVAILABLE') {
     // NGO 1 acquires lock first
     cache.updateDonationStatus(donationId, 'MATCHED', {
-      matchedNgoId: 'ngo-1',
+      matchedNgoId: '09afa3ca-3498-4446-96f0-5b566ebdeb53',
       matchedNgoName: 'Braj Seva Foundation',
-      targetBeneficiaryId: 'ben-1',
+      targetBeneficiaryId: 'effc569d-b896-4ace-8b24-72f9ab9d6afd',
       targetBeneficiaryName: 'Radharani Widow & Elder Care Ashram',
       otpCode: '4928'
     });

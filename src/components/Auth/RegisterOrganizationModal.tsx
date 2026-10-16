@@ -246,7 +246,7 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
               <button
                 onClick={() => {
-                  const targetId = registeredOrgId || (activeTab === 'shop' ? 'shop-1' : 'ngo-1');
+                  const targetId = registeredOrgId || (activeTab === 'shop' ? 'ff22da9a-2623-4387-af37-6a8bb50bb19f' : '09afa3ca-3498-4446-96f0-5b566ebdeb53');
                   if (onRegisterSuccess) {
                     onRegisterSuccess(activeTab, targetId);
                   } else if (onRegisteredSuccess) {

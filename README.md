@@ -1,7 +1,7 @@
 # FoodyLoop
 
 > **Smart Surplus Food Recovery, Dynamic AI Demand Forecasting & Seva Platform**  
-> *Pilot Region: Mathura - Vrindavan - Barsana*
+> *Pilot Region: India*
 
 FoodyLoop connects local bhojanalayas, sweet shops, dhabas, ashrams, NGOs, and volunteer couriers to eliminate edible food waste and feed destitute elders and pilgrims in real time.
 

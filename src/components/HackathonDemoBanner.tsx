@@ -82,8 +82,8 @@ export const HackathonDemoBanner: React.FC = () => {
       if (!existing) {
         const demoDonation: Donation = {
           id: 'DEMO-DONATION-1',
-          donorShopId: 'shop-1',
-          donorShopName: 'Krishna Bhojanalaya',
+          donorShopId: 'ff22da9a-2623-4387-af37-6a8bb50bb19f',
+          donorShopName: "Govinda's Restaurant & Bhojanalaya",
           city: 'Vrindavan',
           foodItem: 'Pure Sattvik Dal Rice & Fresh Poori Sabzi',
           foodCategory: 'Cooked Meals',
@@ -114,9 +114,9 @@ export const HackathonDemoBanner: React.FC = () => {
     } else if (stepNumber === 3) {
       cache.setRole('ngo');
       cache.updateDonationStatus('DEMO-DONATION-1', 'AVAILABLE', {
-        matchedNgoId: 'ngo-1',
+        matchedNgoId: '09afa3ca-3498-4446-96f0-5b566ebdeb53',
         matchedNgoName: 'Braj Seva Foundation',
-        targetBeneficiaryId: 'ben-1',
+        targetBeneficiaryId: 'effc569d-b896-4ace-8b24-72f9ab9d6afd',
         targetBeneficiaryName: 'Radharani Widow & Elder Care Ashram',
         distanceKm: 2.1,
         estimatedTravelTimeMin: 12
@@ -124,7 +124,7 @@ export const HackathonDemoBanner: React.FC = () => {
     } else if (stepNumber === 4) {
       cache.setRole('ngo');
       cache.updateDonationStatus('DEMO-DONATION-1', 'MATCHED', {
-        assignedVolunteerId: 'vol-1',
+        assignedVolunteerId: 'd40e3757-896f-4108-bba6-53059f846cba',
         assignedVolunteerName: 'Arun Sharma',
         otpCode: '4928'
       });

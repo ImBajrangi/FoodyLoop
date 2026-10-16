@@ -167,7 +167,7 @@ export const AdminControlRoom: React.FC = () => {
 
   const handleRunRaceTest = async () => {
     setIsRunningRace(true);
-    const targetDonation = state.donations[0]?.id || 'DON-2026-891';
+    const targetDonation = state.donations[0]?.id || 'd3d69fda-445f-430e-ae86-a3974011de64';
     try {
       const res = await simulateAtomicClaimRaceCondition(targetDonation);
       setRaceReport(res);

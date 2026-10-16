@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   Store,
   Building2,
-  Bike,
-  ShieldCheck,
   ArrowRight,
   Globe2,
   Lock,
@@ -31,16 +29,16 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
   // Mode: Sign In vs Sign Up
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
-  // Sign In Role Tab
-  const [signinRole, setSigninRole] = useState<'shop' | 'ngo' | 'volunteer' | 'admin'>('shop');
+  // Sign In Role Tab: Shop or NGO
+  const [signinRole, setSigninRole] = useState<'shop' | 'ngo'>('shop');
   const [signinPhone, setSigninPhone] = useState('');
   const [signinPassword, setSigninPassword] = useState('');
   const [signinError, setSigninError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [unregisteredNumber, setUnregisteredNumber] = useState<string | null>(null);
 
-  // Sign Up Role Tab
-  const [signupRole, setSignupRole] = useState<'shop' | 'ngo' | 'volunteer'>('shop');
+  // Sign Up Role Tab: Shop or NGO
+  const [signupRole, setSignupRole] = useState<'shop' | 'ngo'>('shop');
 
   // Common Registration Form State
   const [orgName, setOrgName] = useState('');
@@ -52,7 +50,6 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
   const [phone, setPhone] = useState('');
   const [capacity, setCapacity] = useState('100');
   const [password, setPassword] = useState('');
-  const [vehicleType, setVehicleType] = useState('Motorcycle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState<string | null>(null);
 
@@ -61,16 +58,6 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
     e.preventDefault();
     setSigninError(null);
     setUnregisteredNumber(null);
-
-    // Admin role handling
-    if (signinRole === 'admin') {
-      if (!signinPassword.trim()) {
-        setSigninError(isHindi ? 'कृपया सुरक्षा पिन या पासवर्ड दर्ज करें।' : 'Please enter security PIN or password.');
-        return;
-      }
-      onSelectPortal('admin', undefined, 'admin');
-      return;
-    }
 
     const clean = signinPhone.replace(/\D/g, '');
 
@@ -83,23 +70,6 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
     // Password validation
     if (!signinPassword.trim()) {
       setSigninError(isHindi ? 'कृपया पासवर्ड या 4-अंकीय सुरक्षा पिन दर्ज करें।' : 'Please enter your password or 4-digit PIN.');
-      return;
-    }
-
-    if (signinRole === 'volunteer') {
-      const matched = state.volunteers.find(v => v.phone.replace(/\D/g, '').endsWith(clean));
-      if (matched) {
-        onSelectPortal('ngo_donor', matched.id, 'volunteer');
-        return;
-      }
-      // If mock test volunteer
-      const vol = state.volunteers[0];
-      if (vol) {
-        onSelectPortal('ngo_donor', vol.id, 'volunteer');
-        return;
-      }
-      setSigninError(isHindi ? `मोबाइल नंबर +91 ${clean} सेवादार सूची में नहीं मिला।` : `Mobile number +91 ${clean} not found as volunteer.`);
-      setUnregisteredNumber(clean);
       return;
     }
 
@@ -191,10 +161,6 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
       setTimeout(() => {
         onSelectPortal('ngo_donor', newNgo.id, 'ngo');
       }, 700);
-    } else {
-      // Volunteer
-      const volId = 'vol-' + Date.now();
-      onSelectPortal('ngo_donor', volId, 'volunteer');
     }
   };
 
@@ -332,12 +298,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                 <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '8px' }}>
                   {isHindi ? 'अपनी भूमिका चुनें:' : 'Select Your Role to Access:'}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   {[
-                    { id: 'shop', label: isHindi ? 'दुकान' : 'Shop', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
-                    { id: 'ngo', label: isHindi ? 'आश्रम' : 'NGO', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' },
-                    { id: 'volunteer', label: isHindi ? 'सेवादार' : 'Rider', icon: Bike, activeColor: '#ff9600', darkColor: '#c26900' },
-                    { id: 'admin', label: isHindi ? 'एडमिन' : 'Admin', icon: ShieldCheck, activeColor: '#7c3aed', darkColor: '#6d28d9' }
+                    { id: 'shop', label: isHindi ? 'दुकानदार / रेस्टोरेंट' : 'Shop / Restaurant', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
+                    { id: 'ngo', label: isHindi ? 'आश्रम / एनजीओ' : 'NGO / Ashram', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' }
                   ].map(tab => {
                     const Icon = tab.icon;
                     const isSelected = signinRole === tab.id;
@@ -352,7 +316,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                           setSigninPhone('');
                         }}
                         style={{
-                          padding: '10px 4px',
+                          padding: '12px 8px',
                           borderRadius: '12px',
                           border: isSelected ? `2px solid ${tab.darkColor}` : '2px solid #e2e8f0',
                           backgroundColor: isSelected ? tab.activeColor : '#f8fafc',
@@ -362,12 +326,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '0.75rem',
+                          gap: '6px',
+                          fontSize: '0.82rem',
                           fontWeight: 800
                         }}
                       >
-                        <Icon size={18} />
+                        <Icon size={20} />
                         <span>{tab.label}</span>
                       </button>
                     );
@@ -379,139 +343,105 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                 {/* Mobile / ID Input */}
                 <div>
                   <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>
-                    {signinRole === 'shop'
-                      ? (isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number')
-                      : signinRole === 'ngo'
-                        ? (isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number')
-                        : signinRole === 'volunteer'
-                          ? (isHindi ? 'सेवादार 10-अंकीय मोबाइल नंबर' : 'Volunteer 10-Digit Mobile Number')
-                          : (isHindi ? 'खाद्य सुरक्षा अधिकारी आईडी / मोबाइल' : 'Food Safety Officer ID or Admin Mobile')}
+                    {isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number'}
                   </label>
 
-                  {signinRole === 'admin' ? (
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="FSSAI-ADMIN-01 या admin"
-                      value={signinPhone}
-                      onChange={e => {
-                        setSigninPhone(e.target.value);
-                        setSigninError(null);
-                      }}
-                      style={{ height: '44px', fontSize: '0.88rem' }}
-                    />
-                  ) : (
-                    <div>
+                  <div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'stretch',
+                      borderRadius: '12px',
+                      border: signinError && !signinPhone ? '2px solid #ef4444' : '2px solid var(--color-border)',
+                      overflow: 'hidden',
+                      backgroundColor: '#ffffff'
+                    }}>
                       <div style={{
                         display: 'flex',
-                        alignItems: 'stretch',
-                        borderRadius: '12px',
-                        border: signinError && !signinPhone ? '2px solid #ef4444' : '2px solid var(--color-border)',
-                        overflow: 'hidden',
-                        backgroundColor: '#ffffff'
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '0 12px',
+                        backgroundColor: '#f8fafc',
+                        borderRight: '2px solid var(--color-border)',
+                        fontWeight: 800,
+                        fontSize: '0.86rem',
+                        color: 'var(--color-text-muted)'
                       }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '0 12px',
-                          backgroundColor: '#f8fafc',
-                          borderRight: '2px solid var(--color-border)',
-                          fontWeight: 800,
-                          fontSize: '0.86rem',
-                          color: 'var(--color-text-muted)'
-                        }}>
-                          <Phone size={14} />
-                          <span>+91</span>
-                        </div>
-                        <input
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={10}
-                          className="form-input"
-                          style={{
-                            flex: 1,
-                            border: 'none',
-                            borderRadius: 0,
-                            height: '44px',
-                            fontSize: '0.94rem',
-                            letterSpacing: '1px',
-                            fontWeight: 700,
-                            padding: '0 12px'
-                          }}
-                          placeholder={
-                            signinRole === 'shop'
-                              ? '98371 45290'
-                              : signinRole === 'ngo'
-                                ? '98200 44102'
-                                : '98971 22340'
-                          }
-                          value={signinPhone}
-                          onChange={e => {
-                            const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-                            setSigninPhone(digits);
+                        <Phone size={14} />
+                        <span>+91</span>
+                      </div>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        className="form-input"
+                        style={{
+                          flex: 1,
+                          border: 'none',
+                          borderRadius: 0,
+                          height: '44px',
+                          fontSize: '0.94rem',
+                          letterSpacing: '1px',
+                          fontWeight: 700,
+                          padding: '0 12px'
+                        }}
+                        placeholder={
+                          signinRole === 'shop'
+                            ? '98371 45290'
+                            : '98200 44102'
+                        }
+                        value={signinPhone}
+                        onChange={e => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setSigninPhone(digits);
+                          setSigninError(null);
+                          setUnregisteredNumber(null);
+                        }}
+                      />
+                    </div>
+
+                    {/* Dropdown to select from registered establishments */}
+                    <div style={{ marginTop: '8px' }}>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '4px' }}>
+                        {signinRole === 'shop'
+                          ? (isHindi ? 'या पंजीकृत दुकान चुनें (त्वरित चयन):' : 'Or quick select registered shop:')
+                          : (isHindi ? 'या पंजीकृत संस्था/आश्रम चुनें (त्वरित चयन):' : 'Or quick select registered NGO/Ashram:')}
+                      </div>
+                      <select
+                        className="form-input"
+                        style={{ height: '36px', fontSize: '0.8rem', backgroundColor: '#f8fafc', fontWeight: 600, cursor: 'pointer' }}
+                        value=""
+                        onChange={e => {
+                          if (e.target.value) {
+                            setSigninPhone(e.target.value);
                             setSigninError(null);
                             setUnregisteredNumber(null);
-                          }}
-                        />
-                      </div>
-
-                      {/* Dropdown to select from registered establishments */}
-                      <div style={{ marginTop: '8px' }}>
-                        <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '4px' }}>
+                          }
+                        }}
+                      >
+                        <option value="">
                           {signinRole === 'shop'
-                            ? (isHindi ? 'या पंजीकृत दुकान चुनें (त्वरित चयन):' : 'Or quick select registered shop:')
-                            : signinRole === 'ngo'
-                              ? (isHindi ? 'या पंजीकृत संस्था/आश्रम चुनें (त्वरित चयन):' : 'Or quick select registered NGO/Ashram:')
-                              : (isHindi ? 'या पंजीकृत सेवादार चुनें:' : 'Or quick select registered rider:')}
-                        </div>
-                        <select
-                          className="form-input"
-                          style={{ height: '36px', fontSize: '0.8rem', backgroundColor: '#f8fafc', fontWeight: 600, cursor: 'pointer' }}
-                          value=""
-                          onChange={e => {
-                            if (e.target.value) {
-                              setSigninPhone(e.target.value);
-                              setSigninError(null);
-                              setUnregisteredNumber(null);
-                            }
-                          }}
-                        >
-                          <option value="">
-                            {signinRole === 'shop'
-                              ? (isHindi ? '-- सूची से पंजीकृत दुकान चुनें --' : '-- Choose Registered Shop to Auto-fill --')
-                              : signinRole === 'ngo'
-                                ? (isHindi ? '-- सूची से पंजीकृत आश्रम चुनें --' : '-- Choose Registered NGO to Auto-fill --')
-                                : (isHindi ? '-- सूची से सेवादार चुनें --' : '-- Choose Registered Rider to Auto-fill --')}
-                          </option>
-                          {signinRole === 'shop' && state.shops.map(s => {
-                            const raw = s.phone.replace(/\D/g, '').slice(-10);
-                            return (
-                              <option key={s.id} value={raw}>
-                                {s.name} ({s.city}) - +91 {raw}
-                              </option>
-                            );
-                          })}
-                          {signinRole === 'ngo' && state.ngos.map(n => {
-                            const raw = n.phone.replace(/\D/g, '').slice(-10);
-                            return (
-                              <option key={n.id} value={raw}>
-                                {n.name} ({n.city}) - +91 {raw}
-                              </option>
-                            );
-                          })}
-                          {signinRole === 'volunteer' && state.volunteers.map(v => {
-                            const raw = v.phone.replace(/\D/g, '').slice(-10);
-                            return (
-                              <option key={v.id} value={raw}>
-                                {v.name} ({v.city}) - +91 {raw}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
+                            ? (isHindi ? '-- सूची से पंजीकृत दुकान चुनें --' : '-- Choose Registered Shop to Auto-fill --')
+                            : (isHindi ? '-- सूची से पंजीकृत आश्रम चुनें --' : '-- Choose Registered NGO to Auto-fill --')}
+                        </option>
+                        {signinRole === 'shop' && state.shops.map(s => {
+                          const raw = s.phone.replace(/\D/g, '').slice(-10);
+                          return (
+                            <option key={s.id} value={raw}>
+                              {s.name} ({s.city}) - +91 {raw}
+                            </option>
+                          );
+                        })}
+                        {signinRole === 'ngo' && state.ngos.map(n => {
+                          const raw = n.phone.replace(/\D/g, '').slice(-10);
+                          return (
+                            <option key={n.id} value={raw}>
+                              {n.name} ({n.city}) - +91 {raw}
+                            </option>
+                          );
+                        })}
+                      </select>
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* Password / PIN Input */}
@@ -636,11 +566,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                   <span>
                     {signinRole === 'shop'
                       ? (isHindi ? 'दुकानदार डैशबोर्ड में लॉगिन करें' : 'Sign In as Shop Partner')
-                      : signinRole === 'ngo'
-                        ? (isHindi ? 'आश्रम/एनजीओ हब में लॉगिन करें' : 'Sign In as NGO Hub')
-                        : signinRole === 'volunteer'
-                          ? (isHindi ? 'सेवादार कूरियर ऐप में लॉगिन करें' : 'Sign In as Volunteer')
-                          : (isHindi ? 'केंद्रीय कंट्रोल रूम में प्रवेश करें' : 'Sign In as FSSAI Admin')}
+                      : (isHindi ? 'आश्रम/एनजीओ हब में लॉगिन करें' : 'Sign In as NGO Hub')}
                   </span>
                   <ArrowRight size={18} />
                 </button>
@@ -701,11 +627,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '8px' }}>
                       {isHindi ? 'पंजीकरण प्रकार चुनें:' : 'Select Registration Category:'}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       {[
                         { id: 'shop', label: isHindi ? 'दुकानदार / हलवाई' : 'Shop / Restaurant', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
-                        { id: 'ngo', label: isHindi ? 'आश्रम / एनजीओ' : 'NGO / Ashram', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' },
-                        { id: 'volunteer', label: isHindi ? 'सेवादार (Courier)' : 'Volunteer Courier', icon: Bike, activeColor: '#ff9600', darkColor: '#c26900' }
+                        { id: 'ngo', label: isHindi ? 'आश्रम / एनजीओ' : 'NGO / Ashram', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' }
                       ].map(tab => {
                         const Icon = tab.icon;
                         const isSelected = signupRole === tab.id;
@@ -719,7 +644,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                               if (tab.id === 'ngo') setCategory('Food Recovery & Ashram Feeding');
                             }}
                             style={{
-                              padding: '10px 4px',
+                              padding: '12px 8px',
                               borderRadius: '12px',
                               border: isSelected ? `2px solid ${tab.darkColor}` : '2px solid #e2e8f0',
                               backgroundColor: isSelected ? tab.activeColor : '#f8fafc',
@@ -729,12 +654,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '0.74rem',
+                              gap: '6px',
+                              fontSize: '0.82rem',
                               fontWeight: 800
                             }}
                           >
-                            <Icon size={18} />
+                            <Icon size={20} />
                             <span>{tab.label}</span>
                           </button>
                         );
@@ -743,14 +668,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                   </div>
 
                   <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {/* Organization or Volunteer Name */}
+                    {/* Organization Name */}
                     <div>
                       <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
                         {signupRole === 'shop'
                           ? (isHindi ? 'दुकान / प्रतिष्ठान का नाम *' : 'Establishment / Shop Name *')
-                          : signupRole === 'ngo'
-                            ? (isHindi ? 'आश्रम / एनजीओ का नाम *' : 'Ashram / NGO Name *')
-                            : (isHindi ? 'सेवादार का पूरा नाम *' : 'Volunteer Full Name *')}
+                          : (isHindi ? 'आश्रम / एनजीओ का नाम *' : 'Ashram / NGO Name *')}
                       </label>
                       <input
                         type="text"
@@ -759,9 +682,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                         placeholder={
                           signupRole === 'shop'
                             ? 'उदा. बृजवासी पेड़ा व मिष्ठान भंडार'
-                            : signupRole === 'ngo'
-                              ? 'उदा. श्री राधा कृपा धाम वृद्धाश्रम'
-                              : 'उदा. रोहित शर्मा'
+                            : 'उदा. श्री राधा कृपा धाम वृद्धाश्रम'
                         }
                         value={orgName}
                         onChange={e => setOrgName(e.target.value)}
@@ -770,50 +691,48 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     </div>
 
                     {/* Category Selection (For Shop or NGO) */}
-                    {signupRole !== 'volunteer' && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                            {signupRole === 'shop' ? 'प्रतिष्ठान श्रेणी' : 'संस्था का उद्देश्य'}
-                          </label>
-                          <select
-                            className="form-input"
-                            value={category}
-                            onChange={e => setCategory(e.target.value)}
-                            style={{ height: '42px', fontSize: '0.82rem' }}
-                          >
-                            {signupRole === 'shop' ? (
-                              <>
-                                <option value="Pure Veg Traditional Bhojanalaya">पारंपरिक भोजनालय</option>
-                                <option value="Sweets & Bakers">मिष्ठान व बेकरी</option>
-                                <option value="Restaurant & Catering">रेस्टोरेंट व कैटरर्स</option>
-                                <option value="Temple Prasadam Kitchen">मंदिर रसोई / अन्नक्षेत्र</option>
-                              </>
-                            ) : (
-                              <>
-                                <option value="Elder Care & Widow Shelter">वृद्ध व विधवा आश्रम</option>
-                                <option value="Food Recovery & Distribution">भोजन वितरण संस्था</option>
-                                <option value="Pilgrim Dharamshala">तीर्थयात्री धर्मशाला</option>
-                              </>
-                            )}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                            {signupRole === 'shop' ? 'FSSAI लाइसेंस नंबर' : 'दर्पण / ट्रस्ट रजिस्ट्रेशन'}
-                          </label>
-                          <input
-                            type="text"
-                            className="form-input"
-                            placeholder={signupRole === 'shop' ? '14-अंकीय FSSAI नंबर' : 'ट्रस्ट पंजीकरण संख्या'}
-                            value={licenseNumber}
-                            onChange={e => setLicenseNumber(e.target.value)}
-                            style={{ height: '42px', fontSize: '0.82rem' }}
-                          />
-                        </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                          {signupRole === 'shop' ? 'प्रतिष्ठान श्रेणी' : 'संस्था का उद्देश्य'}
+                        </label>
+                        <select
+                          className="form-input"
+                          value={category}
+                          onChange={e => setCategory(e.target.value)}
+                          style={{ height: '42px', fontSize: '0.82rem' }}
+                        >
+                          {signupRole === 'shop' ? (
+                            <>
+                              <option value="Pure Veg Traditional Bhojanalaya">पारंपरिक भोजनालय</option>
+                              <option value="Sweets & Bakers">मिष्ठान व बेकरी</option>
+                              <option value="Restaurant & Catering">रेस्टोरेंट व कैटरर्स</option>
+                              <option value="Temple Prasadam Kitchen">मंदिर रसोई / अन्नक्षेत्र</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="Elder Care & Widow Shelter">वृद्ध व विधवा आश्रम</option>
+                              <option value="Food Recovery & Distribution">भोजन वितरण संस्था</option>
+                              <option value="Pilgrim Dharamshala">तीर्थयात्री धर्मशाला</option>
+                            </>
+                          )}
+                        </select>
                       </div>
-                    )}
+
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                          {signupRole === 'shop' ? 'FSSAI लाइसेंस नंबर' : 'दर्पण / ट्रस्ट रजिस्ट्रेशन'}
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder={signupRole === 'shop' ? '14-अंकीय FSSAI नंबर' : 'ट्रस्ट पंजीकरण संख्या'}
+                          value={licenseNumber}
+                          onChange={e => setLicenseNumber(e.target.value)}
+                          style={{ height: '42px', fontSize: '0.82rem' }}
+                        />
+                      </div>
+                    </div>
 
                     {/* City and Address */}
                     <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '10px' }}>
@@ -853,31 +772,17 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                       <div>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                          {signupRole === 'volunteer' ? 'वाहन प्रकार' : (isHindi ? 'प्रभारी का नाम *' : 'Contact Person *')}
+                          {isHindi ? 'प्रभारी का नाम *' : 'Contact Person *'}
                         </label>
-                        {signupRole === 'volunteer' ? (
-                          <select
-                            className="form-input"
-                            value={vehicleType}
-                            onChange={e => setVehicleType(e.target.value)}
-                            style={{ height: '42px', fontSize: '0.82rem' }}
-                          >
-                            <option value="Motorcycle">मोटरसाइकिल</option>
-                            <option value="Scooter">स्कूटर</option>
-                            <option value="E-Rickshaw">ई-रिक्शा</option>
-                            <option value="Bicycle">साइकिल</option>
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            required
-                            className="form-input"
-                            placeholder="प्रभारी नाम"
-                            value={contactPerson}
-                            onChange={e => setContactPerson(e.target.value)}
-                            style={{ height: '42px', fontSize: '0.82rem' }}
-                          />
-                        )}
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          placeholder="प्रभारी नाम"
+                          value={contactPerson}
+                          onChange={e => setContactPerson(e.target.value)}
+                          style={{ height: '42px', fontSize: '0.82rem' }}
+                        />
                       </div>
 
                       <div>
@@ -952,9 +857,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                       <span>
                         {signupRole === 'shop'
                           ? (isHindi ? 'दुकानदार खाता पंजीकृत करें' : 'Register Shop & Open Dashboard')
-                          : signupRole === 'ngo'
-                            ? (isHindi ? 'आश्रम/एनजीओ पंजीकृत करें' : 'Register NGO & Open Hub')
-                            : (isHindi ? 'सेवादार खाता पंजीकृत करें' : 'Register as Courier Rider')}
+                          : (isHindi ? 'आश्रम/एनजीओ पंजीकृत करें' : 'Register NGO & Open Hub')}
                       </span>
                       <ArrowRight size={18} />
                     </button>
@@ -997,7 +900,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
         color: 'var(--color-text-muted)',
         paddingTop: '16px'
       }}>
-        Foody Loop • Smart Food Recovery &amp; Distribution Platform • Mathura - Vrindavan - Barsana Regional Pilot • FSSAI IFSA Certified
+        Foody Loop • Smart Food Recovery &amp; Distribution Platform • Indian Regional Pilot • FSSAI IFSA Certified
       </footer>
     </div>
   );

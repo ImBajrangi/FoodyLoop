@@ -22,8 +22,8 @@ export const AdminMultiPortalSwitchboard: React.FC<AdminMultiPortalSwitchboardPr
   onBackToAdmin
 }) => {
   const { state } = useAppState();
-  const [selectedShopId, setSelectedShopId] = useState(state.shops[0]?.id || 'shop-1');
-  const [selectedNgoId, setSelectedNgoId] = useState(state.ngos[0]?.id || 'ngo-1');
+  const [selectedShopId, setSelectedShopId] = useState(state.shops[0]?.id || 'ff22da9a-2623-4387-af37-6a8bb50bb19f');
+  const [selectedNgoId, setSelectedNgoId] = useState(state.ngos[0]?.id || '09afa3ca-3498-4446-96f0-5b566ebdeb53');
   const [phoneNumber, setPhoneNumber] = useState('');
 
   const isHindi = state.language === 'hi';

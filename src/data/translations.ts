@@ -2,7 +2,7 @@ export const TRANSLATIONS = {
   en: {
     appName: 'Foody Loop',
     tagline: 'AI-Powered Food Intelligence, Donation & Redistribution',
-    pilotBadge: 'PILOT: Mathura - Vrindavan - Barsana',
+    pilotBadge: 'PILOT: India',
     role_shop: 'Shopkeeper / Restaurant',
     role_ngo: 'NGO & Food Recovery',
     role_volunteer: 'Volunteer Delivery',

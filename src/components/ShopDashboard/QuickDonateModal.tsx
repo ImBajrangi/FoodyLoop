@@ -76,9 +76,9 @@ export const QuickDonateModal: React.FC<QuickDonateModalProps> = ({ isOpen, onCl
 
     const newDonation: Donation = {
       id: `DON-${Date.now().toString().slice(-4)}`,
-      donorShopId: currentShop.id,
-      donorShopName: currentShop.name,
-      city: currentShop.city,
+      donorShopId: currentShop?.id || state.activeShopId || 'ff22da9a-2623-4387-af37-6a8bb50bb19f',
+      donorShopName: currentShop?.name || "Govinda's Restaurant & Bhojanalaya",
+      city: currentShop?.city || 'Vrindavan',
       foodItem: selectedItem.name,
       foodCategory: 'Cooked Meals',
       quantity: Number(quantity),

@@ -1,0 +1,377 @@
+:root {
+  /* Duolingo Typography */
+  --font-body: 'duolingo-sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Laila', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Duolingo Measured Design Tokens */
+  --color-primary: #a5ed6e;
+  --color-on-primary: #111111;
+  --color-primary-dark: #58a700;
+  --color-primary-border: #79cc33;
+
+  --color-background: #ddf4ff;
+  --color-card: #ffffff;
+  --color-card-subtle: #f7fafd;
+  --color-border: #d4e7f0;
+
+  --color-text: #3c3c3c;
+  --color-text-muted: #777777;
+
+  --color-accent: #1cb0f6;
+  --color-accent-dark: #1899d6;
+  --color-accent-border: #0fa2e4;
+
+  /* Backward compatibility aliases */
+  --bg-main: var(--color-background);
+  --bg-card: var(--color-card);
+  --bg-card-subtle: var(--color-card-subtle);
+  --bg-hover: #eaf6fc;
+
+  --text-primary: var(--color-text);
+  --text-secondary: #555555;
+  --text-muted: var(--color-text-muted);
+
+  --saffron-50: #fff4e5;
+  --saffron-100: #ffe5c2;
+  --saffron-500: #ff9600;
+  --saffron-600: #e07f00;
+  --saffron-700: #c26900;
+
+  --emerald-50: #f0fbee;
+  --emerald-100: #d6f8cb;
+  --emerald-500: var(--color-primary);
+  --emerald-600: #58cc02;
+  --emerald-700: var(--color-primary-dark);
+
+  --amber-500: #ffc800;
+  --rose-500: #ff4b4b;
+  --blue-500: var(--color-accent);
+
+  --border-light: #e5e5e5;
+  --border-saffron: rgba(255, 150, 0, 0.4);
+  --border-emerald: rgba(88, 204, 2, 0.4);
+
+  --shadow-sm: 0 2px 0 #e5e5e5;
+  --shadow-md: 0 4px 0 #e5e5e5;
+  --shadow-lg: 0 6px 0 #e5e5e5, 0 10px 20px rgba(0, 0, 0, 0.06);
+
+  /* Duolingo Spacing & Corner Radii */
+  --space-base: 10px;
+  --space-scale-1: 10px;
+  --space-scale-2: 20px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Duolingo 300ms Snappy Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.5;
+  font-size: 13px;
+  font-weight: 700;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Helpers */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-text);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Duolingo Tactile Card Containers */
+.glass-panel {
+  background: var(--color-card);
+  border: 2px solid var(--border-light);
+  border-bottom: 4px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border-radius: var(--radius-md);
+}
+
+@supports (backdrop-filter: blur(12px)) {
+  .glass-panel-blur {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px);
+    border: 2px solid var(--border-light);
+    border-bottom: 4px solid #e0e0e0;
+  }
+}
+
+/* Duolingo 3D Tactile Buttons - 44px min touch target */
+button, .btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: transform 100ms ease, box-shadow 100ms ease, background-color 200ms ease;
+  position: relative;
+  user-select: none;
+}
+
+button.btn-icon, .btn-icon {
+  min-width: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+/* Focus Indicator - 2px Solid Outline in Accent / Primary */
+button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Primary Button - Lime Green with 3D bottom edge */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: 2px solid var(--color-primary-border);
+  border-bottom: 4px solid var(--color-primary-dark);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.04);
+}
+
+.btn-primary:hover {
+  background: #b6f385;
+}
+
+.btn-primary:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  box-shadow: none;
+}
+
+/* Secondary Button - Crisp White with 3D bottom edge */
+.btn-secondary {
+  background: #ffffff;
+  color: var(--color-text);
+  border: 2px solid #e5e5e5;
+  border-bottom: 4px solid #d4d4d4;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.04);
+}
+
+.btn-secondary:hover {
+  background: #f7f7f7;
+  border-color: #d4d4d4;
+}
+
+.btn-secondary:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  box-shadow: none;
+}
+
+/* Accent Button - Bright Cyan Blue */
+.btn-accent, .btn-blue {
+  background: var(--color-accent);
+  color: #ffffff;
+  border: 2px solid var(--color-accent-border);
+  border-bottom: 4px solid var(--color-accent-dark);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.04);
+}
+
+.btn-accent:hover, .btn-blue:hover {
+  background: #39bbf7;
+}
+
+.btn-accent:active, .btn-blue:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  box-shadow: none;
+}
+
+/* Success Button */
+.btn-success {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: 2px solid var(--color-primary-border);
+  border-bottom: 4px solid var(--color-primary-dark);
+}
+
+.btn-success:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+/* Duolingo Pill Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.badge-emerald {
+  background: #e8fcd9;
+  color: #388e00;
+  border: 1.5px solid #a5ed6e;
+}
+
+.badge-saffron {
+  background: #fff4e5;
+  color: #c26900;
+  border: 1.5px solid #ffc800;
+}
+
+.badge-neutral {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1.5px solid #e2e8f0;
+}
+
+/* Layout Container - Fluid Responsive Wide Space */
+.container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+@media (min-width: 1536px) {
+  .container {
+    max-width: 1600px;
+    padding: 0 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 12px;
+  }
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeIn 300ms ease;
+}
+
+.modal-content {
+  background: white;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+  border: 2px solid #e5e5e5;
+  border-bottom: 4px solid #d4d4d4;
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  animation: scaleUp 300ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Animations */
+.pulse-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-primary-dark);
+  box-shadow: 0 0 0 0 rgba(88, 204, 2, 0.7);
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(88, 204, 2, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(88, 204, 2, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(88, 204, 2, 0); }
+}
+
+/* Form Inputs with WCAG AA Contrast */
+.form-input, .form-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 2px solid #e5e5e5;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  background: #ffffff;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color var(--transition-normal);
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(28, 176, 246, 0.2);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: #b2dfee;
+  border-radius: var(--radius-md);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #89cce6;
+}

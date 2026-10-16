@@ -38,8 +38,7 @@ export function App() {
       <main className="container" style={{ flex: 1, padding: '24px 16px' }}>
         {showAdminView ? (
           <div>
-            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="badge badge-emerald">Central Command Room</span>
+            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <button
                 onClick={() => setShowAdminView(false)}
                 className="btn btn-secondary"

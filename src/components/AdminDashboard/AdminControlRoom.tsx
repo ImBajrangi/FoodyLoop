@@ -214,14 +214,9 @@ export const AdminControlRoom: React.FC = () => {
             </div>
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--color-text)', letterSpacing: '0.4px', margin: 0 }}>
-                  Foody Loop Central Operations Control
-                </h2>
-                <span className="badge badge-emerald" style={{ fontSize: '0.74rem' }}>
-                  Braj Pilot Command
-                </span>
-              </div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--color-text)', letterSpacing: '0.4px', margin: 0 }}>
+                Foody Loop Central Operations Control
+              </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: 0 }}>
                 FSSAI regulatory oversight, verification auditing, and district-wide food redistribution logistics.
               </p>
@@ -229,36 +224,15 @@ export const AdminControlRoom: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{
-              backgroundColor: '#f0fdf4',
-              border: '1.5px solid #86efac',
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.78rem',
-              color: '#15803d',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: '#22c55e',
-                display: 'inline-block'
-              }} />
-              <span>Supabase PostgreSQL: <strong>Connected ({supabaseHealth.projectRef})</strong> • {supabaseHealth.latencyMs}ms</span>
-            </span>
-
             <button
               onClick={handleManualSync}
               disabled={isRefreshingDb}
               style={{
                 backgroundColor: '#ffffff',
                 border: '1.5px solid #86efac',
-                padding: '6px 12px',
+                padding: '6px 14px',
                 borderRadius: 'var(--radius-md)',
-                fontSize: '0.78rem',
+                fontSize: '0.8rem',
                 color: '#15803d',
                 fontWeight: 700,
                 display: 'inline-flex',
@@ -270,18 +244,6 @@ export const AdminControlRoom: React.FC = () => {
               <RotateCcw size={13} style={{ transform: isRefreshingDb ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s' }} />
               <span>{isRefreshingDb ? 'Syncing...' : 'Sync DB Now'}</span>
             </button>
-
-            <span style={{
-              backgroundColor: '#eff6ff',
-              border: '1.5px solid #bfdbfe',
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.78rem',
-              color: '#1d4ed8',
-              fontWeight: 700
-            }}>
-              System Status: 100% Operational
-            </span>
           </div>
         </div>
 
@@ -827,41 +789,115 @@ export const AdminControlRoom: React.FC = () => {
           </div>
 
           {/* Approved & Active Roster */}
-          <div className="glass-panel" style={{ padding: '20px' }}>
-            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ShieldCheck size={16} color="var(--emerald-600)" />
-              <span>Active Authorized Organizations ({state.shops.filter(s => s.verified).length + state.ngos.filter(n => n.verified).length})</span>
-            </h4>
+          <div className="glass-panel" style={{ padding: '24px', backgroundColor: '#ffffff' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+              marginBottom: '16px',
+              borderBottom: '2px solid #f1f5f9',
+              paddingBottom: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={20} color="#16a34a" />
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
+                  Active Authorized Organizations ({state.shops.filter(s => s.verified).length + state.ngos.filter(n => n.verified).length})
+                </h4>
+              </div>
+            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '14px' }}>
               {state.shops.filter(s => s.verified).map(s => (
-                <div key={s.id} style={{ background: '#f8fafc', border: '1px solid var(--border-light)', padding: '12px', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.86rem' }}>{s.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>FSSAI: {s.fssaiNumber}</div>
+                <div
+                  key={s.id}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '2px solid #e2e8f0',
+                    borderBottom: '4px solid #cbd5e1',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '12px',
+                          backgroundColor: '#ecfdf5',
+                          border: '1.5px solid #a7f3d0',
+                          color: '#059669',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <Store size={20} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#0f172a', lineHeight: 1.3 }}>
+                            {s.name}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                            FSSAI #{s.fssaiNumber}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span style={{
+                        backgroundColor: '#f0fdf4',
+                        color: '#166534',
+                        border: '1.5px solid #bbf7d0',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}>
+                        Shop Partner
+                      </span>
                     </div>
-                    <span className="badge badge-emerald" style={{ fontSize: '0.68rem' }}>Verified Partner</span>
+
+                    <div style={{
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '10px',
+                      padding: '8px 12px',
+                      fontSize: '0.76rem',
+                      color: '#475569',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <MapPin size={13} color="#94a3b8" />
+                      <span>{s.city}</span>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <span>{s.contactPerson}</span>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{s.phone}</span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                    {s.city} • Contact: {s.contactPerson} ({s.phone})
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
-                      Live in Database
-                    </span>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
                     <button
                       onClick={() => handleHold(s.id, s.name)}
                       disabled={Boolean(actionLoading[s.id])}
                       style={{
-                        background: '#fff1f2',
-                        border: '1px solid #fecdd3',
+                        backgroundColor: '#fff1f2',
+                        border: '1.5px solid #fecdd3',
                         color: '#e11d48',
-                        fontSize: '0.7rem',
+                        fontSize: '0.74rem',
                         fontWeight: 700,
-                        padding: '3px 8px',
-                        borderRadius: '8px',
+                        padding: '5px 12px',
+                        borderRadius: '10px',
                         cursor: 'pointer'
                       }}
                     >
@@ -870,34 +906,96 @@ export const AdminControlRoom: React.FC = () => {
                   </div>
                 </div>
               ))}
+
               {state.ngos.filter(n => n.verified).map(n => (
-                <div key={n.id} style={{ background: '#f8fafc', border: '1px solid var(--border-light)', padding: '12px', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.86rem' }}>{n.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Capacity: {n.capacity} meals/day</div>
+                <div
+                  key={n.id}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '2px solid #e2e8f0',
+                    borderBottom: '4px solid #cbd5e1',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '12px',
+                          backgroundColor: '#eff6ff',
+                          border: '1.5px solid #bfdbfe',
+                          color: '#2563eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <Building2 size={20} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#0f172a', lineHeight: 1.3 }}>
+                            {n.name}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                            Capacity: {n.capacity} meals/day
+                          </div>
+                        </div>
+                      </div>
+
+                      <span style={{
+                        backgroundColor: '#eff6ff',
+                        color: '#1e40af',
+                        border: '1.5px solid #bfdbfe',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}>
+                        Ashram / NGO
+                      </span>
                     </div>
-                    <span className="badge badge-emerald" style={{ fontSize: '0.68rem' }}>Verified NGO</span>
+
+                    <div style={{
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '10px',
+                      padding: '8px 12px',
+                      fontSize: '0.76rem',
+                      color: '#475569',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <MapPin size={13} color="#94a3b8" />
+                      <span>{n.city}</span>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <span>{n.contactPerson}</span>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{n.phone}</span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                    {n.city} • Contact: {n.contactPerson} ({n.phone})
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
-                      Live in Database
-                    </span>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
                     <button
                       onClick={() => handleHold(n.id, n.name)}
                       disabled={Boolean(actionLoading[n.id])}
                       style={{
-                        background: '#fff1f2',
-                        border: '1px solid #fecdd3',
+                        backgroundColor: '#fff1f2',
+                        border: '1.5px solid #fecdd3',
                         color: '#e11d48',
-                        fontSize: '0.7rem',
+                        fontSize: '0.74rem',
                         fontWeight: 700,
-                        padding: '3px 8px',
-                        borderRadius: '8px',
+                        padding: '5px 12px',
+                        borderRadius: '10px',
                         cursor: 'pointer'
                       }}
                     >

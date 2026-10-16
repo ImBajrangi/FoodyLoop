@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import {
   Store,
-  HeartHandshake,
+  Building2,
+  Bike,
   ShieldCheck,
   ArrowRight,
   Globe2,
-  Phone,
-  UtensilsCrossed,
-  Building2,
-  Bike,
-  Sparkles,
   Lock,
-  CheckCircle2
+  Phone,
+  User,
+  MapPin,
+  FileText,
+  CheckCircle2,
+  UtensilsCrossed,
+  Eye,
+  EyeOff,
+  AlertCircle
 } from 'lucide-react';
 import { useAppState } from '../../services/useAppState';
-import { RegisterOrganizationModal } from './RegisterOrganizationModal';
-import type { UserRole } from '../../types';
+import type { UserRole, Shop, Ngo } from '../../types';
 
 interface LoginPortalProps {
   onSelectPortal: (portal: 'shop' | 'ngo_donor' | 'admin', entityId?: string, role?: UserRole) => void;
@@ -23,59 +26,175 @@ interface LoginPortalProps {
 
 export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
   const { state, cache } = useAppState();
-  const [activeLoginMode, setActiveLoginMode] = useState<'roles' | 'phone'>('roles');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [showOtpInput, setShowOtpInput] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [loginNotice, setLoginNotice] = useState<string | null>(null);
-
   const isHindi = state.language === 'hi';
 
-  const defaultShopId = state.shops.find(s => s.verified)?.id || state.shops[0]?.id || 'shop-1';
-  const defaultNgoId = state.ngos.find(n => n.verified)?.id || state.ngos[0]?.id || 'ngo-1';
+  // Mode: Sign In vs Sign Up
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
-  const handlePhoneLogin = (e: React.FormEvent) => {
+  // Sign In Role Tab
+  const [signinRole, setSigninRole] = useState<'shop' | 'ngo' | 'volunteer' | 'admin'>('shop');
+  const [signinPhone, setSigninPhone] = useState('');
+  const [signinPassword, setSigninPassword] = useState('');
+  const [signinError, setSigninError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [unregisteredNumber, setUnregisteredNumber] = useState<string | null>(null);
+
+  // Sign Up Role Tab
+  const [signupRole, setSignupRole] = useState<'shop' | 'ngo' | 'volunteer'>('shop');
+
+  // Common Registration Form State
+  const [orgName, setOrgName] = useState('');
+  const [category, setCategory] = useState('Pure Veg Traditional Bhojanalaya');
+  const [city, setCity] = useState<'Mathura' | 'Vrindavan' | 'Barsana'>('Vrindavan');
+  const [address, setAddress] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
+  const [phone, setPhone] = useState('');
+  const [capacity, setCapacity] = useState('100');
+  const [password, setPassword] = useState('');
+  const [vehicleType, setVehicleType] = useState('Motorcycle');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState<string | null>(null);
+
+  // Handle Sign In Submission
+  const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+    setSigninError(null);
+    setUnregisteredNumber(null);
 
-    // Check if phone matches any registered shop
-    const matchedShop = state.shops.find(s => s.phone.replace(/[^0-9]/g, '').includes(cleanPhone));
-    if (matchedShop) {
-      onSelectPortal('shop', matchedShop.id, 'shop');
-      return;
-    }
-
-    // Check if phone matches any registered NGO
-    const matchedNgo = state.ngos.find(n => n.phone.replace(/[^0-9]/g, '').includes(cleanPhone));
-    if (matchedNgo) {
-      onSelectPortal('ngo_donor', matchedNgo.id, 'ngo');
-      return;
-    }
-
-    // Check if admin / food safety officer phone
-    if (cleanPhone.includes('40004') || phoneNumber.toLowerCase().includes('admin')) {
+    // Admin role handling
+    if (signinRole === 'admin') {
+      if (!signinPassword.trim()) {
+        setSigninError(isHindi ? 'कृपया सुरक्षा पिन या पासवर्ड दर्ज करें।' : 'Please enter security PIN or password.');
+        return;
+      }
       onSelectPortal('admin', undefined, 'admin');
       return;
     }
 
-    // Check if volunteer phone
-    if (cleanPhone.includes('22340') || phoneNumber.toLowerCase().includes('volunteer') || phoneNumber.toLowerCase().includes('rider')) {
-      onSelectPortal('ngo_donor', defaultNgoId, 'volunteer');
+    const clean = signinPhone.replace(/\D/g, '');
+
+    // Strict 10-digit mobile number validation
+    if (!clean || clean.length !== 10) {
+      setSigninError(isHindi ? 'कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit mobile number.');
       return;
     }
 
-    // Check if donor phone
-    if (cleanPhone.includes('33450') || phoneNumber.toLowerCase().includes('donor') || phoneNumber.toLowerCase().includes('sponsor')) {
-      onSelectPortal('ngo_donor', defaultNgoId, 'donor');
+    // Password validation
+    if (!signinPassword.trim()) {
+      setSigninError(isHindi ? 'कृपया पासवर्ड या 4-अंकीय सुरक्षा पिन दर्ज करें।' : 'Please enter your password or 4-digit PIN.');
       return;
     }
 
-    // Fallback: Default to shop demo if ending with 1, NGO if ending with 2, otherwise Shop
-    if (cleanPhone.endsWith('2')) {
-      onSelectPortal('ngo_donor', defaultNgoId, 'ngo');
+    if (signinRole === 'volunteer') {
+      const matched = state.volunteers.find(v => v.phone.replace(/\D/g, '').endsWith(clean));
+      if (matched) {
+        onSelectPortal('ngo_donor', matched.id, 'volunteer');
+        return;
+      }
+      // If mock test volunteer
+      const vol = state.volunteers[0];
+      if (vol) {
+        onSelectPortal('ngo_donor', vol.id, 'volunteer');
+        return;
+      }
+      setSigninError(isHindi ? `मोबाइल नंबर +91 ${clean} सेवादार सूची में नहीं मिला।` : `Mobile number +91 ${clean} not found as volunteer.`);
+      setUnregisteredNumber(clean);
+      return;
+    }
+
+    if (signinRole === 'shop') {
+      // Find matching shop by last 10 digits
+      const matched = state.shops.find(s => s.phone.replace(/\D/g, '').endsWith(clean));
+      if (matched) {
+        onSelectPortal('shop', matched.id, 'shop');
+      } else {
+        setSigninError(isHindi ? `मोबाइल नंबर +91 ${clean} किसी पंजीकृत दुकान से लिंक नहीं है।` : `Mobile number +91 ${clean} is not registered to any shop.`);
+        setUnregisteredNumber(clean);
+      }
+      return;
+    }
+
+    if (signinRole === 'ngo') {
+      // Find matching NGO by last 10 digits
+      const matched = state.ngos.find(n => n.phone.replace(/\D/g, '').endsWith(clean));
+      if (matched) {
+        onSelectPortal('ngo_donor', matched.id, 'ngo');
+      } else {
+        setSigninError(isHindi ? `मोबाइल नंबर +91 ${clean} किसी पंजीकृत आश्रम/एनजीओ से लिंक नहीं है।` : `Mobile number +91 ${clean} is not registered to any NGO.`);
+        setUnregisteredNumber(clean);
+      }
+      return;
+    }
+  };
+
+  // Handle Sign Up / Registration Submission
+  const handleSignUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgName.trim() || !contactPerson.trim() || !phone.trim()) {
+      alert(isHindi ? 'कृपया सभी आवश्यक फ़ील्ड भरें।' : 'Please fill in all required fields.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const sanitizedLicense = licenseNumber.trim().replace(/[^a-zA-Z0-9]/g, '').slice(0, 14) ||
+      (signupRole === 'shop'
+        ? '12724' + Math.floor(100000000 + Math.random() * 900000000).toString()
+        : 'UP2024' + Math.floor(10000000 + Math.random() * 90000000).toString());
+
+    if (signupRole === 'shop') {
+      const newShop: Shop = {
+        id: 'shop-' + Date.now(),
+        name: orgName.trim(),
+        category: category.trim() || 'Pure Veg Traditional Bhojanalaya',
+        location: address.trim() || city,
+        address: address.trim() || `${city}, Uttar Pradesh`,
+        city: city,
+        rating: 5.0,
+        reputationScore: 80,
+        reputationTier: 'Under Review',
+        verified: false,
+        fssaiNumber: sanitizedLicense,
+        phone: phone.startsWith('+91') ? phone.trim() : `+91 ${phone.trim()}`,
+        contactPerson: contactPerson.trim(),
+        lat: city === 'Mathura' ? 27.4924 : city === 'Barsana' ? 27.6475 : 27.5706,
+        lng: city === 'Mathura' ? 77.6737 : city === 'Barsana' ? 77.3758 : 77.6743,
+        totalDonatedMeals: 0,
+        activeSurplusMeals: 0
+      };
+
+      cache.registerShop(newShop, Number(capacity) || 100);
+      setSignupSuccess(newShop.name);
+      setTimeout(() => {
+        onSelectPortal('shop', newShop.id, 'shop');
+      }, 700);
+    } else if (signupRole === 'ngo') {
+      const newNgo: Ngo = {
+        id: 'ngo-' + Date.now(),
+        name: orgName.trim(),
+        category: (category.includes('Elder') || category.includes('Shelter') ? 'Shelter Management' : 'Food Recovery') as any,
+        address: address.trim() || `${city}, Uttar Pradesh`,
+        city: city,
+        capacity: Number(capacity) || 150,
+        dailyServed: 0,
+        verified: false,
+        contactPerson: contactPerson.trim(),
+        phone: phone.startsWith('+91') ? phone.trim() : `+91 ${phone.trim()}`,
+        lat: city === 'Mathura' ? 27.4950 : city === 'Barsana' ? 27.6500 : 27.5812,
+        lng: city === 'Mathura' ? 77.6750 : city === 'Barsana' ? 77.3800 : 77.6841,
+        activeVolunteers: 0
+      };
+
+      cache.registerNgo(newNgo, sanitizedLicense);
+      setSignupSuccess(newNgo.name);
+      setTimeout(() => {
+        onSelectPortal('ngo_donor', newNgo.id, 'ngo');
+      }, 700);
     } else {
-      onSelectPortal('shop', defaultShopId, 'shop');
+      // Volunteer
+      const volId = 'vol-' + Date.now();
+      onSelectPortal('ngo_donor', volId, 'volunteer');
     }
   };
 
@@ -86,19 +205,18 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      padding: '16px 20px',
+      padding: '20px 16px',
       boxSizing: 'border-box'
     }}>
-      {/* Top Header Bar */}
+      {/* Top Header */}
       <header style={{
-        maxWidth: '1040px',
+        maxWidth: '560px',
         width: '100%',
         margin: '0 auto',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '8px 0',
-        marginBottom: '10px'
+        paddingBottom: '16px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
@@ -107,719 +225,780 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
             borderRadius: '12px',
             backgroundColor: 'var(--color-primary)',
             border: '2px solid var(--color-primary-dark)',
+            boxShadow: '0 3px 0 var(--color-primary-dark)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--color-on-primary)',
-            boxShadow: '0 3px 0 var(--color-primary-dark)'
+            color: 'var(--color-on-primary)'
           }}>
             <UtensilsCrossed size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-text)', letterSpacing: '0.6px', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-text)', letterSpacing: '0.4px', lineHeight: 1.1 }}>
               Foody Loop
             </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-              PAN India Pilot
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+              Smart Surplus Food Recovery Platform
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            onClick={() => setIsRegisterOpen(true)}
-            className="btn btn-primary"
-            style={{
-              minHeight: '38px',
-              padding: '0 16px',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Building2 size={16} />
-            <span>{isHindi ? 'नया पंजीकरण (Register)' : 'New Registration'}</span>
-          </button>
-
-          <button
-            onClick={() => cache.setLanguage(isHindi ? 'en' : 'hi')}
-            className="btn btn-secondary"
-            style={{ minHeight: '38px', padding: '0 14px', fontSize: '0.82rem' }}
-          >
-            <Globe2 size={15} />
-            <span>{isHindi ? 'English' : 'हिन्दी'}</span>
-          </button>
-        </div>
+        <button
+          onClick={() => cache.setLanguage(isHindi ? 'en' : 'hi')}
+          className="btn btn-secondary"
+          style={{ minHeight: '36px', padding: '0 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Globe2 size={14} />
+          <span>{isHindi ? 'English' : 'हिन्दी'}</span>
+        </button>
       </header>
 
-      {/* Main Login Body */}
+      {/* Main Authentication Card */}
       <main style={{
+        maxWidth: '560px',
+        width: '100%',
+        margin: '0 auto',
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '10px 0 24px 0',
-        width: '100%',
-        maxWidth: '1040px',
-        margin: '0 auto'
+        justifyContent: 'center'
       }}>
-        {/* Title & Introduction */}
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            backgroundColor: '#f0fdf4',
-            border: '1.5px solid #bbf7d0',
-            color: '#166534',
-            borderRadius: '20px',
-            padding: '4px 14px',
-            fontSize: '0.78rem',
-            fontWeight: 800,
-            marginBottom: '8px'
-          }}>
-            <Sparkles size={14} color="#16a34a" />
-            <span>FSSAI Certified Surplus Food Recovery Platform</span>
-          </div>
-
-          <h1 style={{
-            fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
-            fontWeight: 900,
-            color: 'var(--color-text)',
-            lineHeight: 1.25,
-            marginBottom: '6px'
-          }}>
-            {isHindi ? 'फूडी लूप पोर्टल लॉगिन' : 'Sign In to Foody Loop'}
-          </h1>
-          <p style={{
-            fontSize: '0.88rem',
-            color: 'var(--color-text-muted)',
-            maxWidth: '580px',
-            margin: '0 auto',
-            lineHeight: 1.45
-          }}>
-            {isHindi
-              ? 'अपनी भूमिका चुनें या पंजीकृत फोन नंबर द्वारा सीधे अपने समर्पित डैशबोर्ड में प्रवेश करें।'
-              : 'Access your dedicated operational portal according to your registered role in the Braj Pilot.'}
-          </p>
-        </div>
-
-        {/* Login Method Tabs */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '10px',
-          marginBottom: '20px'
+        <div className="glass-panel" style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '20px',
+          border: '2px solid var(--color-border)',
+          boxShadow: '0 4px 0 var(--color-border)',
+          padding: '24px 28px',
+          boxSizing: 'border-box'
         }}>
-          <button
-            onClick={() => setActiveLoginMode('roles')}
-            style={{
-              padding: '8px 20px',
-              borderRadius: '12px',
-              border: activeLoginMode === 'roles' ? '2px solid var(--color-primary-dark)' : '2px solid var(--color-border)',
-              backgroundColor: activeLoginMode === 'roles' ? 'var(--color-primary)' : '#ffffff',
-              color: activeLoginMode === 'roles' ? 'var(--color-on-primary)' : 'var(--color-text)',
-              boxShadow: activeLoginMode === 'roles' ? '0 3px 0 var(--color-primary-dark)' : 'none',
-              fontSize: '0.84rem',
-              fontWeight: 800,
-              cursor: 'pointer'
-            }}
-          >
-            {isHindi ? 'भूमिका अनुसार सीधा प्रवेश' : 'Direct Role Access'}
-          </button>
-          <button
-            onClick={() => setActiveLoginMode('phone')}
-            style={{
-              padding: '8px 20px',
-              borderRadius: '12px',
-              border: activeLoginMode === 'phone' ? '2px solid var(--color-primary-dark)' : '2px solid var(--color-border)',
-              backgroundColor: activeLoginMode === 'phone' ? 'var(--color-primary)' : '#ffffff',
-              color: activeLoginMode === 'phone' ? 'var(--color-on-primary)' : 'var(--color-text)',
-              boxShadow: activeLoginMode === 'phone' ? '0 3px 0 var(--color-primary-dark)' : 'none',
-              fontSize: '0.84rem',
-              fontWeight: 800,
-              cursor: 'pointer'
-            }}
-          >
-            {isHindi ? 'मोबाइल नंबर व ओटीपी' : 'Mobile Phone & OTP'}
-          </button>
-        </div>
-
-        {/* Mode 1: Distributed Role Cards */}
-        {activeLoginMode === 'roles' && (
+          {/* Primary Mode Tabs: Sign In vs Sign Up */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px',
-            marginBottom: '20px'
+            gridTemplateColumns: '1fr 1fr',
+            gap: '8px',
+            backgroundColor: '#f1f5f9',
+            padding: '4px',
+            borderRadius: '14px',
+            marginBottom: '22px'
           }}>
-            {/* ROLE 1: SHOP & RESTAURANT */}
-            <div
-              onClick={() => onSelectPortal('shop', defaultShopId, 'shop')}
-              className="glass-panel"
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('signin');
+                setSigninError(null);
+              }}
               style={{
-                padding: '20px',
-                border: '2px solid #58cc02',
-                borderBottom: '5px solid #58a700',
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                boxShadow: '0 4px 12px rgba(88, 204, 2, 0.1)',
+                minHeight: '40px',
+                borderRadius: '10px',
+                border: 'none',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                backgroundColor: authMode === 'signin' ? '#ffffff' : 'transparent',
+                color: authMode === 'signin' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                boxShadow: authMode === 'signin' ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
                 cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 0.15s ease'
+                transition: 'all 0.15s'
               }}
             >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    backgroundColor: '#e8fcd9',
-                    border: '2px solid #a5ed6e',
-                    color: '#388e00',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <Store size={22} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.12rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                      {isHindi ? 'दुकानदार व रेस्टोरेंट' : 'Shop & Restaurant Partner'}
-                    </h3>
-                    <div style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 700 }}>
-                      {isHindi ? 'हलवाई, भोजनालय व कैटरर्स' : 'Sweet Shops, Bhojanalayas & Caterers'}
-                    </div>
-                  </div>
-                </div>
-
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.4, marginBottom: '14px' }}>
-                  {isHindi
-                    ? 'अतिरिक्त भोजन का 60 सेकंड में दान, तीर्थ यात्री मांग पूर्वानुमान और एफएसएसएआई सत्यापित रसीद।'
-                    : 'Surplus food declaration, AI footfall demand forecasting, and instant FSSAI donation certificates.'}
-                </p>
-              </div>
-
-              <button
-                className="btn btn-primary"
-                style={{
-                  width: '100%',
-                  minHeight: '40px',
-                  fontSize: '0.84rem',
-                  fontWeight: 800,
-                  justifyContent: 'center'
-                }}
-              >
-                <span>{isHindi ? 'दुकानदार डैशबोर्ड में प्रवेश' : 'Enter Shop Dashboard'}</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            {/* ROLE 2: NGO & ASHRAM */}
-            <div
-              onClick={() => onSelectPortal('ngo_donor', defaultNgoId, 'ngo')}
-              className="glass-panel"
+              {isHindi ? 'लॉगिन (Sign In)' : 'Sign In'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('signup');
+                setSigninError(null);
+              }}
               style={{
-                padding: '20px',
-                border: '2px solid #1cb0f6',
-                borderBottom: '5px solid #1899d6',
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                boxShadow: '0 4px 12px rgba(28, 176, 246, 0.1)',
+                minHeight: '40px',
+                borderRadius: '10px',
+                border: 'none',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                backgroundColor: authMode === 'signup' ? '#ffffff' : 'transparent',
+                color: authMode === 'signup' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                boxShadow: authMode === 'signup' ? '0 2px 4px rgba(0,0,0,0.06)' : 'none',
                 cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 0.15s ease'
+                transition: 'all 0.15s'
               }}
             >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    backgroundColor: '#e5f6fd',
-                    border: '2px solid #1cb0f6',
-                    color: '#1899d6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <Building2 size={22} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.12rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                      {isHindi ? 'आश्रम व एनजीओ हब' : 'NGO & Ashram Hub'}
-                    </h3>
-                    <div style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 700 }}>
-                      {isHindi ? 'वृद्ध आश्रम, गौशाला व सेवा न्यास' : 'Ashrams, Shelters & Recovery Trusts'}
-                    </div>
-                  </div>
-                </div>
-
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.4, marginBottom: '14px' }}>
-                  {isHindi
-                    ? 'ताजा अतिरिक्त भोजन का 1-क्लिक दावा, आपातकालीन मांग पत्र और सुरक्षित 4-अंकीय ओटीपी हस्तांतरण।'
-                    : 'Claim surplus meals, manage ashram dietary demands, and receive food with safe 4-digit OTP handover.'}
-                </p>
-              </div>
-
-              <button
-                className="btn btn-accent"
-                style={{
-                  width: '100%',
-                  minHeight: '40px',
-                  fontSize: '0.84rem',
-                  fontWeight: 800,
-                  justifyContent: 'center'
-                }}
-              >
-                <span>{isHindi ? 'एनजीओ पोर्टल में प्रवेश' : 'Enter NGO Portal'}</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            {/* ROLE 3: VOLUNTEER COURIER */}
-            <div
-              onClick={() => onSelectPortal('ngo_donor', defaultNgoId, 'volunteer')}
-              className="glass-panel"
-              style={{
-                padding: '20px',
-                border: '2px solid #ff9600',
-                borderBottom: '5px solid #cc7800',
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                boxShadow: '0 4px 12px rgba(255, 150, 0, 0.1)',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 0.15s ease'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    backgroundColor: '#fff7ed',
-                    border: '2px solid #fdba74',
-                    color: '#c2410c',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <Bike size={22} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.12rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                      {isHindi ? 'स्वयंसेवक डिलीवरी राइडर' : 'Volunteer Courier'}
-                    </h3>
-                    <div style={{ fontSize: '0.72rem', color: '#c2410c', fontWeight: 700 }}>
-                      {isHindi ? 'ई-स्कूटर व वाहन सेवा' : 'E-Scooter & Delivery Transit'}
-                    </div>
-                  </div>
-                </div>
-
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.4, marginBottom: '14px' }}>
-                  {isHindi
-                    ? 'दुकान से आश्रम तक सुरक्षित भोजन परिवहन, तापमान सत्यापन और ओटीपी डिलीवरी पुष्टि।'
-                    : 'Food redistribution routing between shops and ashrams, thermal verification, and delivery completion.'}
-                </p>
-              </div>
-
-              <button
-                className="btn btn-secondary"
-                style={{
-                  width: '100%',
-                  minHeight: '40px',
-                  fontSize: '0.84rem',
-                  fontWeight: 800,
-                  justifyContent: 'center',
-                  backgroundColor: '#fff7ed',
-                  color: '#c2410c',
-                  borderColor: '#fdba74'
-                }}
-              >
-                <span>{isHindi ? 'राइडर पोर्टल में प्रवेश' : 'Enter Courier View'}</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            {/* ROLE 4: PILGRIM & SPONSOR */}
-            <div
-              onClick={() => onSelectPortal('ngo_donor', defaultNgoId, 'donor')}
-              className="glass-panel"
-              style={{
-                padding: '20px',
-                border: '2px solid #a855f7',
-                borderBottom: '5px solid #7e22ce',
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                boxShadow: '0 4px 12px rgba(168, 85, 247, 0.1)',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 0.15s ease'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    backgroundColor: '#faf5ff',
-                    border: '2px solid #d8b4fe',
-                    color: '#7e22ce',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <HeartHandshake size={22} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.12rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                      {isHindi ? 'तीर्थ अन्नदाता व प्रायोजक' : 'Pilgrim & Food Sponsor'}
-                    </h3>
-                    <div style={{ fontSize: '0.72rem', color: '#7e22ce', fontWeight: 700 }}>
-                      {isHindi ? 'जन्मदिन, पुण्यतिथि व उत्सव भंडारा' : 'Annadanam & Memorial Sponsorship'}
-                    </div>
-                  </div>
-                </div>
-
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.4, marginBottom: '14px' }}>
-                  {isHindi
-                    ? 'वृन्दावन व मथुरा के आश्रमों में भंडारा प्रायोजित करें और डिजिटल दान प्रमाणपत्र प्राप्त करें।'
-                    : 'Sponsor fresh hot meals at local ashrams with transparent distribution and digital certificate.'}
-                </p>
-              </div>
-
-              <button
-                className="btn btn-secondary"
-                style={{
-                  width: '100%',
-                  minHeight: '40px',
-                  fontSize: '0.84rem',
-                  fontWeight: 800,
-                  justifyContent: 'center',
-                  backgroundColor: '#faf5ff',
-                  color: '#7e22ce',
-                  borderColor: '#d8b4fe'
-                }}
-              >
-                <span>{isHindi ? 'अन्नदान ऐप में प्रवेश' : 'Enter Sponsorship App'}</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            {/* ROLE 5: FOOD SAFETY OFFICER & CENTRAL ADMIN */}
-            <div
-              onClick={() => onSelectPortal('admin', undefined, 'admin')}
-              className="glass-panel"
-              style={{
-                padding: '20px',
-                border: '2px solid #3b82f6',
-                borderBottom: '5px solid #1d4ed8',
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.1)',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 0.15s ease'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    backgroundColor: '#eff6ff',
-                    border: '2px solid #93c5fd',
-                    color: '#1d4ed8',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <ShieldCheck size={22} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.12rem', fontWeight: 900, color: '#1e293b', margin: 0 }}>
-                      {isHindi ? 'खाद्य सुरक्षा अधिकारी व एडमिन' : 'Food Safety Officer & Admin'}
-                    </h3>
-                    <div style={{ fontSize: '0.72rem', color: '#1d4ed8', fontWeight: 700 }}>
-                      {isHindi ? 'केंद्रीय नियंत्रण कक्ष व अनुमोदन' : 'Central Regulatory Operations Room'}
-                    </div>
-                  </div>
-                </div>
-
-                <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', lineHeight: 1.4, marginBottom: '14px' }}>
-                  {isHindi
-                    ? 'संस्था अनुमोदन, एफएसएसएआई विनियमन, जिला मांग-आपूर्ति विश्लेषण और मास्टर स्विचबोर्ड।'
-                    : 'FSSAI partner approvals, Supabase database audit logs, regional supply analysis, and district switchboard.'}
-                </p>
-              </div>
-
-              <button
-                className="btn btn-secondary"
-                style={{
-                  width: '100%',
-                  minHeight: '40px',
-                  fontSize: '0.84rem',
-                  fontWeight: 800,
-                  justifyContent: 'center',
-                  backgroundColor: '#eff6ff',
-                  color: '#1d4ed8',
-                  borderColor: '#93c5fd'
-                }}
-              >
-                <span>{isHindi ? 'नियंत्रण कक्ष में प्रवेश' : 'Enter Central Control Room'}</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
+              {isHindi ? 'नया पंजीकरण (Register)' : 'Register Organization'}
+            </button>
           </div>
-        )}
 
-        {/* Mode 2: Phone Number & OTP Login */}
-        {activeLoginMode === 'phone' && (
-          <div className="glass-panel" style={{
-            maxWidth: '520px',
-            margin: '0 auto 20px auto',
-            padding: '28px',
-            backgroundColor: '#ffffff',
-            borderRadius: '20px',
-            border: '2px solid var(--color-border)',
-            boxShadow: '0 4px 0 var(--color-border)',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '16px',
-              backgroundColor: '#e5f6fd',
-              color: '#1899d6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 14px auto'
-            }}>
-              <Phone size={26} />
-            </div>
-
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', margin: '0 0 6px 0' }}>
-              {isHindi ? 'पंजीकृत मोबाइल नंबर दर्ज करें' : 'Login with Mobile Number'}
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: '20px' }}>
-              {isHindi
-                ? 'सिस्टम स्वचालित रूप से आपकी संस्था या भूमिका पहचान कर उपयुक्त पोर्टल खोलेगा।'
-                : 'Directly access your authorized portal using your registered mobile number.'}
-            </p>
-
-            <form onSubmit={handlePhoneLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', textAlign: 'left', fontSize: '0.78rem', fontWeight: 700, marginBottom: '6px' }}>
-                  {isHindi ? 'मोबाइल नंबर:' : 'Mobile Number:'}
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="tel"
-                    placeholder="+91 98371 45290"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="form-input"
-                    style={{ flex: 1, height: '44px', fontSize: '0.92rem', fontWeight: 700 }}
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    style={{ minHeight: '44px', padding: '0 20px', fontSize: '0.88rem', fontWeight: 800 }}
-                  >
-                    <span>{isHindi ? 'प्रवेश करें' : 'Sign In'}</span>
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {/* Quick Demo Fill Buttons */}
-            <div style={{ marginTop: '22px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '8px' }}>
-                One-Click Quick Test Credentials:
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneNumber('+91 98371 45290');
-                    onSelectPortal('shop', defaultShopId, 'shop');
-                  }}
-                  style={{
-                    background: '#f0fdf4',
-                    border: '1.5px solid #86efac',
-                    color: '#166534',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Shop (+91 98371 45290)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneNumber('+91 98971 20002');
-                    onSelectPortal('ngo_donor', defaultNgoId, 'ngo');
-                  }}
-                  style={{
-                    background: '#eff6ff',
-                    border: '1.5px solid #93c5fd',
-                    color: '#1d4ed8',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  NGO (+91 98971 20002)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneNumber('+91 98971 22340');
-                    onSelectPortal('ngo_donor', defaultNgoId, 'volunteer');
-                  }}
-                  style={{
-                    background: '#fff7ed',
-                    border: '1.5px solid #fed7aa',
-                    color: '#c2410c',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Volunteer (+91 98971 22340)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneNumber('+91 98971 40004');
-                    onSelectPortal('admin', undefined, 'admin');
-                  }}
-                  style={{
-                    background: '#fef3c7',
-                    border: '1.5px solid #fde68a',
-                    color: '#92400e',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Admin / FSSAI (+91 98971 40004)
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* New Organization Registration Callout Banner */}
-        <div style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '16px',
-          border: '2px solid var(--color-border)',
-          boxShadow: '0 3px 0 var(--color-border)',
-          padding: '16px 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              backgroundColor: '#f0fdf4',
-              border: '2px solid #86efac',
-              color: '#15803d',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Building2 size={20} />
-            </div>
+          {/* TAB 1: SIGN IN FORM */}
+          {authMode === 'signin' && (
             <div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-text)' }}>
-                {isHindi ? 'नई दुकान, रेस्टोरेंट अथवा एनजीओ का पंजीकरण' : 'Register a New Restaurant, Shop or NGO Partner'}
+              <div style={{ marginBottom: '18px' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '8px' }}>
+                  {isHindi ? 'अपनी भूमिका चुनें:' : 'Select Your Role to Access:'}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                  {[
+                    { id: 'shop', label: isHindi ? 'दुकान' : 'Shop', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
+                    { id: 'ngo', label: isHindi ? 'आश्रम' : 'NGO', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' },
+                    { id: 'volunteer', label: isHindi ? 'सेवादार' : 'Rider', icon: Bike, activeColor: '#ff9600', darkColor: '#c26900' },
+                    { id: 'admin', label: isHindi ? 'एडमिन' : 'Admin', icon: ShieldCheck, activeColor: '#7c3aed', darkColor: '#6d28d9' }
+                  ].map(tab => {
+                    const Icon = tab.icon;
+                    const isSelected = signinRole === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          setSigninRole(tab.id as typeof signinRole);
+                          setSigninError(null);
+                          setUnregisteredNumber(null);
+                          setSigninPhone('');
+                        }}
+                        style={{
+                          padding: '10px 4px',
+                          borderRadius: '12px',
+                          border: isSelected ? `2px solid ${tab.darkColor}` : '2px solid #e2e8f0',
+                          backgroundColor: isSelected ? tab.activeColor : '#f8fafc',
+                          color: isSelected ? '#ffffff' : '#475569',
+                          boxShadow: isSelected ? `0 3px 0 ${tab.darkColor}` : 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: 800
+                        }}
+                      >
+                        <Icon size={18} />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>
-                {isHindi
-                  ? 'मथुरा, वृन्दावन और बरसाना में कार्यरत संस्थाएं 2 मिनट में निःशुल्क पंजीकरण करें।'
-                  : 'Join the Mathura-Vrindavan surplus food recovery pilot under FSSAI regulatory standards.'}
+
+              <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Mobile / ID Input */}
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                    {signinRole === 'shop'
+                      ? (isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number')
+                      : signinRole === 'ngo'
+                      ? (isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number')
+                      : signinRole === 'volunteer'
+                      ? (isHindi ? 'सेवादार 10-अंकीय मोबाइल नंबर' : 'Volunteer 10-Digit Mobile Number')
+                      : (isHindi ? 'खाद्य सुरक्षा अधिकारी आईडी / मोबाइल' : 'Food Safety Officer ID or Admin Mobile')}
+                  </label>
+
+                  {signinRole === 'admin' ? (
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="FSSAI-ADMIN-01 या admin"
+                      value={signinPhone}
+                      onChange={e => {
+                        setSigninPhone(e.target.value);
+                        setSigninError(null);
+                      }}
+                      style={{ height: '44px', fontSize: '0.88rem' }}
+                    />
+                  ) : (
+                    <div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'stretch',
+                        borderRadius: '12px',
+                        border: signinError && !signinPhone ? '2px solid #ef4444' : '2px solid var(--color-border)',
+                        overflow: 'hidden',
+                        backgroundColor: '#ffffff'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '0 12px',
+                          backgroundColor: '#f8fafc',
+                          borderRight: '2px solid var(--color-border)',
+                          fontWeight: 800,
+                          fontSize: '0.86rem',
+                          color: 'var(--color-text-muted)'
+                        }}>
+                          <Phone size={14} />
+                          <span>+91</span>
+                        </div>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          maxLength={10}
+                          className="form-input"
+                          style={{
+                            flex: 1,
+                            border: 'none',
+                            borderRadius: 0,
+                            height: '44px',
+                            fontSize: '0.94rem',
+                            letterSpacing: '1px',
+                            fontWeight: 700,
+                            padding: '0 12px'
+                          }}
+                          placeholder={
+                            signinRole === 'shop'
+                              ? '98371 45290'
+                              : signinRole === 'ngo'
+                              ? '98200 44102'
+                              : '98971 22340'
+                          }
+                          value={signinPhone}
+                          onChange={e => {
+                            const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setSigninPhone(digits);
+                            setSigninError(null);
+                            setUnregisteredNumber(null);
+                          }}
+                        />
+                      </div>
+
+                      {/* Dropdown to select from registered establishments */}
+                      <div style={{ marginTop: '8px' }}>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '4px' }}>
+                          {signinRole === 'shop'
+                            ? (isHindi ? 'या पंजीकृत दुकान चुनें (त्वरित चयन):' : 'Or quick select registered shop:')
+                            : signinRole === 'ngo'
+                            ? (isHindi ? 'या पंजीकृत संस्था/आश्रम चुनें (त्वरित चयन):' : 'Or quick select registered NGO/Ashram:')
+                            : (isHindi ? 'या पंजीकृत सेवादार चुनें:' : 'Or quick select registered rider:')}
+                        </div>
+                        <select
+                          className="form-input"
+                          style={{ height: '36px', fontSize: '0.8rem', backgroundColor: '#f8fafc', fontWeight: 600, cursor: 'pointer' }}
+                          value=""
+                          onChange={e => {
+                            if (e.target.value) {
+                              setSigninPhone(e.target.value);
+                              setSigninError(null);
+                              setUnregisteredNumber(null);
+                            }
+                          }}
+                        >
+                          <option value="">
+                            {signinRole === 'shop'
+                              ? (isHindi ? '-- सूची से पंजीकृत दुकान चुनें --' : '-- Choose Registered Shop to Auto-fill --')
+                              : signinRole === 'ngo'
+                              ? (isHindi ? '-- सूची से पंजीकृत आश्रम चुनें --' : '-- Choose Registered NGO to Auto-fill --')
+                              : (isHindi ? '-- सूची से सेवादार चुनें --' : '-- Choose Registered Rider to Auto-fill --')}
+                          </option>
+                          {signinRole === 'shop' && state.shops.map(s => {
+                            const raw = s.phone.replace(/\D/g, '').slice(-10);
+                            return (
+                              <option key={s.id} value={raw}>
+                                {s.name} ({s.city}) - +91 {raw}
+                              </option>
+                            );
+                          })}
+                          {signinRole === 'ngo' && state.ngos.map(n => {
+                            const raw = n.phone.replace(/\D/g, '').slice(-10);
+                            return (
+                              <option key={n.id} value={raw}>
+                                {n.name} ({n.city}) - +91 {raw}
+                              </option>
+                            );
+                          })}
+                          {signinRole === 'volunteer' && state.volunteers.map(v => {
+                            const raw = v.phone.replace(/\D/g, '').slice(-10);
+                            return (
+                              <option key={v.id} value={raw}>
+                                {v.name} ({v.city}) - +91 {raw}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Password / PIN Input */}
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                    {isHindi ? 'पासवर्ड / सुरक्षा पिन' : 'Password / Security PIN'}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="form-input"
+                      placeholder={isHindi ? '4-अंकीय पिन या पासवर्ड' : 'Enter 4-digit PIN or password'}
+                      value={signinPassword}
+                      onChange={e => {
+                        setSigninPassword(e.target.value);
+                        setSigninError(null);
+                      }}
+                      style={{ height: '44px', fontSize: '0.88rem', paddingRight: '42px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px'
+                      }}
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                      {isHindi ? 'डिफ़ॉल्ट सुरक्षा पिन: 1234' : 'Default test PIN: 1234'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSigninPassword('1234')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        color: 'var(--color-primary-dark)',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      {isHindi ? '1234 भरें' : 'Fill 1234'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Error Alert with 1-click Registration CTA */}
+                {signinError && (
+                  <div style={{
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}>
+                    <div style={{ color: '#dc2626', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <AlertCircle size={16} />
+                      <span>{signinError}</span>
+                    </div>
+                    {unregisteredNumber && (signinRole === 'shop' || signinRole === 'ngo') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('signup');
+                          setSignupRole(signinRole === 'ngo' ? 'ngo' : 'shop');
+                          setPhone(unregisteredNumber);
+                          setSigninError(null);
+                          setUnregisteredNumber(null);
+                        }}
+                        style={{
+                          alignSelf: 'flex-start',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: '#dc2626',
+                          color: '#ffffff',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          marginTop: '2px'
+                        }}
+                      >
+                        {isHindi
+                          ? `+91 ${unregisteredNumber} के साथ नया पंजीकरण करें →`
+                          : `Register new ${signinRole === 'ngo' ? 'NGO' : 'Shop'} with +91 ${unregisteredNumber} →`}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{
+                    minHeight: '46px',
+                    fontSize: '0.92rem',
+                    fontWeight: 800,
+                    width: '100%',
+                    justifyContent: 'center',
+                    marginTop: '4px'
+                  }}
+                >
+                  <span>
+                    {signinRole === 'shop'
+                      ? (isHindi ? 'दुकानदार डैशबोर्ड में लॉगिन करें' : 'Sign In as Shop Partner')
+                      : signinRole === 'ngo'
+                      ? (isHindi ? 'आश्रम/एनजीओ हब में लॉगिन करें' : 'Sign In as NGO Hub')
+                      : signinRole === 'volunteer'
+                      ? (isHindi ? 'सेवादार कूरियर ऐप में लॉगिन करें' : 'Sign In as Volunteer')
+                      : (isHindi ? 'केंद्रीय कंट्रोल रूम में प्रवेश करें' : 'Sign In as FSSAI Admin')}
+                  </span>
+                  <ArrowRight size={18} />
+                </button>
+              </form>
+
+              <div style={{ textAlign: 'center', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  {isHindi ? 'क्या आपका प्रतिष्ठान पंजीकृत नहीं है? ' : "Don't have an account yet? "}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('signup')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--color-primary-dark)',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  {isHindi ? 'यहाँ नया पंजीकरण करें' : 'Register Here'}
+                </button>
               </div>
             </div>
-          </div>
+          )}
 
-          <button
-            onClick={() => setIsRegisterOpen(true)}
-            className="btn btn-primary"
-            style={{ minHeight: '38px', fontSize: '0.84rem', padding: '0 18px', fontWeight: 800 }}
-          >
-            <span>{isHindi ? 'पंजीकरण फॉर्म खोलें' : 'Register Organization'}</span>
-            <ArrowRight size={16} />
-          </button>
+          {/* TAB 2: REGISTRATION / SIGN UP FORM */}
+          {authMode === 'signup' && (
+            <div>
+              {signupSuccess ? (
+                <div style={{ textAlign: 'center', padding: '24px 8px' }}>
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    backgroundColor: '#ecfdf5',
+                    border: '2px solid #10b981',
+                    color: '#059669',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px auto'
+                  }}>
+                    <CheckCircle2 size={32} />
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: '0 0 6px 0' }}>
+                    {isHindi ? 'पंजीकरण सफल!' : 'Registration Completed!'}
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)' }}>
+                    {isHindi ? `${signupSuccess} का खाता तैयार हो गया है। डैशबोर्ड खुल रहा है...` : `${signupSuccess} is registered. Launching dashboard...`}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '8px' }}>
+                      {isHindi ? 'पंजीकरण प्रकार चुनें:' : 'Select Registration Category:'}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                      {[
+                        { id: 'shop', label: isHindi ? 'दुकानदार / हलवाई' : 'Shop / Restaurant', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
+                        { id: 'ngo', label: isHindi ? 'आश्रम / एनजीओ' : 'NGO / Ashram', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' },
+                        { id: 'volunteer', label: isHindi ? 'सेवादार (Courier)' : 'Volunteer Courier', icon: Bike, activeColor: '#ff9600', darkColor: '#c26900' }
+                      ].map(tab => {
+                        const Icon = tab.icon;
+                        const isSelected = signupRole === tab.id;
+                        return (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => {
+                              setSignupRole(tab.id as typeof signupRole);
+                              if (tab.id === 'shop') setCategory('Pure Veg Traditional Bhojanalaya');
+                              if (tab.id === 'ngo') setCategory('Food Recovery & Ashram Feeding');
+                            }}
+                            style={{
+                              padding: '10px 4px',
+                              borderRadius: '12px',
+                              border: isSelected ? `2px solid ${tab.darkColor}` : '2px solid #e2e8f0',
+                              backgroundColor: isSelected ? tab.activeColor : '#f8fafc',
+                              color: isSelected ? '#ffffff' : '#475569',
+                              boxShadow: isSelected ? `0 3px 0 ${tab.darkColor}` : 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 800
+                            }}
+                          >
+                            <Icon size={18} />
+                            <span>{tab.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Organization or Volunteer Name */}
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                        {signupRole === 'shop'
+                          ? (isHindi ? 'दुकान / प्रतिष्ठान का नाम *' : 'Establishment / Shop Name *')
+                          : signupRole === 'ngo'
+                          ? (isHindi ? 'आश्रम / एनजीओ का नाम *' : 'Ashram / NGO Name *')
+                          : (isHindi ? 'सेवादार का पूरा नाम *' : 'Volunteer Full Name *')}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        className="form-input"
+                        placeholder={
+                          signupRole === 'shop'
+                            ? 'उदा. बृजवासी पेड़ा व मिष्ठान भंडार'
+                            : signupRole === 'ngo'
+                            ? 'उदा. श्री राधा कृपा धाम वृद्धाश्रम'
+                            : 'उदा. रोहित शर्मा'
+                        }
+                        value={orgName}
+                        onChange={e => setOrgName(e.target.value)}
+                        style={{ height: '42px', fontSize: '0.86rem' }}
+                      />
+                    </div>
+
+                    {/* Category Selection (For Shop or NGO) */}
+                    {signupRole !== 'volunteer' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                            {signupRole === 'shop' ? 'प्रतिष्ठान श्रेणी' : 'संस्था का उद्देश्य'}
+                          </label>
+                          <select
+                            className="form-input"
+                            value={category}
+                            onChange={e => setCategory(e.target.value)}
+                            style={{ height: '42px', fontSize: '0.82rem' }}
+                          >
+                            {signupRole === 'shop' ? (
+                              <>
+                                <option value="Pure Veg Traditional Bhojanalaya">पारंपरिक भोजनालय</option>
+                                <option value="Sweets & Bakers">मिष्ठान व बेकरी</option>
+                                <option value="Restaurant & Catering">रेस्टोरेंट व कैटरर्स</option>
+                                <option value="Temple Prasadam Kitchen">मंदिर रसोई / अन्नक्षेत्र</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="Elder Care & Widow Shelter">वृद्ध व विधवा आश्रम</option>
+                                <option value="Food Recovery & Distribution">भोजन वितरण संस्था</option>
+                                <option value="Pilgrim Dharamshala">तीर्थयात्री धर्मशाला</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                            {signupRole === 'shop' ? 'FSSAI लाइसेंस नंबर' : 'दर्पण / ट्रस्ट रजिस्ट्रेशन'}
+                          </label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder={signupRole === 'shop' ? '14-अंकीय FSSAI नंबर' : 'ट्रस्ट पंजीकरण संख्या'}
+                            value={licenseNumber}
+                            onChange={e => setLicenseNumber(e.target.value)}
+                            style={{ height: '42px', fontSize: '0.82rem' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* City and Address */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '10px' }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                          {isHindi ? 'नगर' : 'City'}
+                        </label>
+                        <select
+                          className="form-input"
+                          value={city}
+                          onChange={e => setCity(e.target.value as any)}
+                          style={{ height: '42px', fontSize: '0.82rem' }}
+                        >
+                          <option value="Vrindavan">वृन्दावन</option>
+                          <option value="Mathura">मथुरा</option>
+                          <option value="Barsana">बरसाना</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                          {isHindi ? 'पता / क्षेत्र *' : 'Address / Zone *'}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          placeholder={isHindi ? 'उदा. रमण रेती रोड, वृन्दावन' : 'e.g. Raman Reti Road, Vrindavan'}
+                          value={address}
+                          onChange={e => setAddress(e.target.value)}
+                          style={{ height: '42px', fontSize: '0.82rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Contact Person & Phone */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                          {signupRole === 'volunteer' ? 'वाहन प्रकार' : (isHindi ? 'प्रभारी का नाम *' : 'Contact Person *')}
+                        </label>
+                        {signupRole === 'volunteer' ? (
+                          <select
+                            className="form-input"
+                            value={vehicleType}
+                            onChange={e => setVehicleType(e.target.value)}
+                            style={{ height: '42px', fontSize: '0.82rem' }}
+                          >
+                            <option value="Motorcycle">मोटरसाइकिल</option>
+                            <option value="Scooter">स्कूटर</option>
+                            <option value="E-Rickshaw">ई-रिक्शा</option>
+                            <option value="Bicycle">साइकिल</option>
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            className="form-input"
+                            placeholder="प्रभारी नाम"
+                            value={contactPerson}
+                            onChange={e => setContactPerson(e.target.value)}
+                            style={{ height: '42px', fontSize: '0.82rem' }}
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                          {isHindi ? 'मोबाइल नंबर (10 अंक) *' : 'Mobile Number (10 Digits) *'}
+                        </label>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'stretch',
+                          borderRadius: '10px',
+                          border: '2px solid var(--color-border)',
+                          overflow: 'hidden',
+                          backgroundColor: '#ffffff'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '0 10px',
+                            backgroundColor: '#f8fafc',
+                            borderRight: '1px solid var(--color-border)',
+                            fontWeight: 800,
+                            fontSize: '0.82rem',
+                            color: 'var(--color-text-muted)'
+                          }}>
+                            <span>+91</span>
+                          </div>
+                          <input
+                            type="tel"
+                            required
+                            inputMode="numeric"
+                            maxLength={10}
+                            className="form-input"
+                            placeholder="98765 43210"
+                            value={phone.replace(/^\+91\s*/, '')}
+                            onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            style={{ height: '40px', fontSize: '0.84rem', border: 'none', borderRadius: 0, flex: 1, fontWeight: 700, padding: '0 10px' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security PIN / Password */}
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                        {isHindi ? 'लॉगिन पासवर्ड / सुरक्षा पिन बनाएं *' : 'Set Password / PIN *'}
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        className="form-input"
+                        placeholder="कम से कम 4 अंक"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        style={{ height: '42px', fontSize: '0.82rem' }}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="btn btn-primary"
+                      style={{
+                        minHeight: '46px',
+                        fontSize: '0.92rem',
+                        fontWeight: 800,
+                        width: '100%',
+                        justifyContent: 'center',
+                        marginTop: '4px'
+                      }}
+                    >
+                      <span>
+                        {signupRole === 'shop'
+                          ? (isHindi ? 'दुकानदार खाता पंजीकृत करें' : 'Register Shop & Open Dashboard')
+                          : signupRole === 'ngo'
+                          ? (isHindi ? 'आश्रम/एनजीओ पंजीकृत करें' : 'Register NGO & Open Hub')
+                          : (isHindi ? 'सेवादार खाता पंजीकृत करें' : 'Register as Courier Rider')}
+                      </span>
+                      <ArrowRight size={18} />
+                    </button>
+                  </form>
+
+                  <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                      {isHindi ? 'पहले से पंजीकृत हैं? ' : 'Already registered? '}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('signin')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-primary-dark)',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      {isHindi ? 'यहाँ लॉगिन करें' : 'Sign In Here'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
 
       {/* Footer */}
       <footer style={{
-        maxWidth: '1040px',
+        maxWidth: '560px',
         width: '100%',
         margin: '0 auto',
         textAlign: 'center',
-        fontSize: '0.74rem',
+        fontSize: '0.75rem',
         color: 'var(--color-text-muted)',
-        paddingTop: '6px',
-        paddingBottom: '8px'
+        paddingTop: '16px'
       }}>
         Foody Loop • Smart Food Recovery &amp; Distribution Platform • Mathura - Vrindavan - Barsana Regional Pilot • FSSAI IFSA Certified
       </footer>
-
-      <RegisterOrganizationModal
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onRegisterSuccess={(role, id) => {
-          setIsRegisterOpen(false);
-          if (role === 'shop') {
-            onSelectPortal('shop', id, 'shop');
-          } else {
-            onSelectPortal('ngo_donor', id, 'ngo');
-          }
-        }}
-      />
     </div>
   );
 };

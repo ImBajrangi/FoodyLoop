@@ -477,17 +477,41 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
 
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)', display: 'block', marginBottom: '4px' }}>
-                    {isHindi ? 'मोबाइल नंबर *' : 'Mobile Phone *'}
+                    {isHindi ? 'मोबाइल नंबर (10 अंक) *' : 'Mobile Phone (10 Digits) *'}
                   </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+91 98370 00000"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="form-input"
-                    style={{ width: '100%', height: '42px', fontSize: '0.86rem' }}
-                  />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'stretch',
+                    borderRadius: '10px',
+                    border: '2px solid var(--color-border)',
+                    overflow: 'hidden',
+                    backgroundColor: '#ffffff'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '0 10px',
+                      backgroundColor: '#f8fafc',
+                      borderRight: '1px solid var(--color-border)',
+                      fontWeight: 800,
+                      fontSize: '0.82rem',
+                      color: 'var(--color-text-muted)'
+                    }}>
+                      <span>+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      required
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="98370 00000"
+                      value={phone.replace(/^\+91\s*/, '')}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      className="form-input"
+                      style={{ width: '100%', height: '42px', fontSize: '0.86rem', border: 'none', borderRadius: 0, fontWeight: 700, padding: '0 10px' }}
+                    />
+                  </div>
                 </div>
 
                 <div>

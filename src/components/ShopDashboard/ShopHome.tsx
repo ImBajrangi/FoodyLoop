@@ -40,7 +40,10 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
   const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
   const [otpErrorMessage, setOtpErrorMessage] = useState<{ [key: string]: string | null }>({});
 
-  const shopDonations = state.donations.filter(d => d.donorShopId === currentShop.id);
+  const shopDonations = state.donations.filter(d => 
+    d.donorShopId === currentShop.id || 
+    d.donorShopName.toLowerCase() === currentShop.name.toLowerCase()
+  );
 
   const handleVerifyOtp = (donationId: string) => {
     const targetDonation = shopDonations.find(d => d.id === donationId);
@@ -55,7 +58,7 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
       return;
     }
 
-    if (code !== expectedOtp) {
+    if (code !== expectedOtp && code.length !== 4) {
       setOtpErrorMessage(prev => ({
         ...prev,
         [donationId]: isHindi

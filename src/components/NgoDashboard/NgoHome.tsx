@@ -22,6 +22,7 @@ export const NgoHome: React.FC = () => {
 
   const currentNgo = state.ngos.find(n => n.id === state.activeNgoId) || state.ngos[0];
   const [selectedVolunteer, setSelectedVolunteer] = useState(state.volunteers[0].id);
+  const [ngoTab, setNgoTab] = useState<'available' | 'claimed'>('available');
   const [claimedModal, setClaimedModal] = useState<{
     donation: Donation;
     otp: string;
@@ -32,6 +33,10 @@ export const NgoHome: React.FC = () => {
   // Available donations seeking match or assigned
   const availableDonations = state.donations.filter(d => 
     d.status === 'AVAILABLE' || d.status === 'SAFETY_REVIEW'
+  );
+
+  const claimedDonations = state.donations.filter(d =>
+    d.matchedNgoId === currentNgo.id || d.status === 'MATCHED' || d.status === 'COLLECTED' || d.status === 'DELIVERED'
   );
 
   const handleAcceptMatch = (donation: Donation) => {
@@ -240,7 +245,7 @@ export const NgoHome: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span className="pulse-indicator" />
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
-                  {isHindi ? 'उपलब्ध अतिरिक्त भोजन (दावा करें)' : 'Available Surplus Food Batches'}
+                  {isHindi ? 'अतिरिक्त भोजन प्रबंधन व प्रेषण' : 'Surplus Food & Courier Dispatch Hub'}
                 </h3>
               </div>
               <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
@@ -248,11 +253,109 @@ export const NgoHome: React.FC = () => {
               </p>
             </div>
             <span className="badge badge-emerald">
-              {availableDonations.length} {isHindi ? 'उपलब्ध' : 'Available'}
+              {ngoTab === 'available' ? availableDonations.length : claimedDonations.length} {ngoTab === 'available' ? (isHindi ? 'उपलब्ध' : 'Available') : (isHindi ? 'मार्गस्थ' : 'Claimed')}
             </span>
           </div>
 
-          {availableDonations.length === 0 ? (
+          {/* Sub-tabs for NGO: Available vs Claimed Dispatches */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <button
+              onClick={() => setNgoTab('available')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '10px',
+                fontSize: '0.82rem',
+                fontWeight: ngoTab === 'available' ? 800 : 700,
+                backgroundColor: ngoTab === 'available' ? '#58cc02' : '#f1f5f9',
+                color: ngoTab === 'available' ? '#ffffff' : 'var(--color-text)',
+                border: ngoTab === 'available' ? '2px solid #58a700' : '2px solid #e2e8f0',
+                cursor: 'pointer'
+              }}
+            >
+              {isHindi ? 'उपलब्ध भोजन बैच' : 'Available Batches'} ({availableDonations.length})
+            </button>
+            <button
+              onClick={() => setNgoTab('claimed')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '10px',
+                fontSize: '0.82rem',
+                fontWeight: ngoTab === 'claimed' ? 800 : 700,
+                backgroundColor: ngoTab === 'claimed' ? '#1cb0f6' : '#f1f5f9',
+                color: ngoTab === 'claimed' ? '#ffffff' : 'var(--color-text)',
+                border: ngoTab === 'claimed' ? '2px solid #1899d6' : '2px solid #e2e8f0',
+                cursor: 'pointer'
+              }}
+            >
+              {isHindi ? 'दावा किए गए व मार्गस्थ' : 'Claimed & In-Transit'} ({claimedDonations.length})
+            </button>
+          </div>
+
+          {ngoTab === 'claimed' ? (
+            claimedDonations.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--color-text-muted)' }}>
+                <Bike size={36} color="#cbd5e1" style={{ margin: '0 auto 8px' }} />
+                <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                  {isHindi ? 'फिलहाल कोई सक्रिय प्रेषण नहीं है।' : 'No active dispatches currently claimed.'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {claimedDonations.map(cDon => (
+                  <div
+                    key={cDon.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '2px solid #1cb0f6',
+                      borderBottom: '4px solid #1899d6',
+                      borderRadius: '12px',
+                      padding: '16px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-text)' }}>
+                          {cDon.foodItem}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                          From: <strong>{cDon.donorShopName}</strong> ({cDon.city})
+                        </div>
+                      </div>
+                      <span className={`badge ${cDon.status === 'DELIVERED' ? 'badge-emerald' : 'badge-saffron'}`} style={{ fontSize: '0.76rem' }}>
+                        {cDon.status === 'MATCHED' ? 'Courier Assigned' : cDon.status === 'COLLECTED' ? 'In Transit to Ashram' : 'Delivered'}
+                      </span>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: '#f8fafc',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      marginBottom: '10px'
+                    }}>
+                      <div>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Assigned Courier: </span>
+                        <strong>{cDon.assignedVolunteerName || 'Arun Sharma (Vrindavan Express)'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Pickup OTP: </span>
+                        <strong style={{ fontFamily: 'var(--font-mono)', letterSpacing: '2px', color: '#1d4ed8' }}>{cDon.otpCode || '4928'}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CheckCircle size={15} />
+                      <span>Destination: {cDon.targetBeneficiaryName || 'Radharani Widow & Elder Care Ashram'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : availableDonations.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--color-text-muted)' }}>
               <Heart size={36} color="#cbd5e1" style={{ margin: '0 auto 8px' }} />
               <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>

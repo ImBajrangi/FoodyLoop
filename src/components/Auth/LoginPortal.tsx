@@ -14,7 +14,9 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  Bike,
+  Sparkles
 } from 'lucide-react';
 import { useAppState } from '../../services/useAppState';
 import type { UserRole, Shop, Ngo } from '../../types';
@@ -30,8 +32,8 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
   // Mode: Sign In vs Sign Up
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
-  // Sign In Role Tab: Shop or NGO
-  const [signinRole, setSigninRole] = useState<'shop' | 'ngo'>('shop');
+  // Sign In Role Tab: Shop, NGO, or Delivery Partner
+  const [signinRole, setSigninRole] = useState<'shop' | 'ngo' | 'rider'>('shop');
   const [signinPhone, setSigninPhone] = useState('');
   const [signinPassword, setSigninPassword] = useState('');
   const [signinError, setSigninError] = useState<string | null>(null);
@@ -110,6 +112,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
         setSigninError(isHindi ? `मोबाइल नंबर +91 ${clean} किसी पंजीकृत आश्रम/एनजीओ से लिंक नहीं है।` : `Mobile number +91 ${clean} is not registered to any NGO.`);
         setUnregisteredNumber(clean);
       }
+      return;
+    }
+
+    if (signinRole === 'rider') {
+      const matched = state.volunteers.find(v => v.phone.replace(/\D/g, '').endsWith(clean)) || state.volunteers[0];
+      onSelectPortal('ngo_donor', matched?.id, 'volunteer');
       return;
     }
   };
@@ -314,10 +322,11 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                 <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '8px' }}>
                   {isHindi ? 'अपनी भूमिका चुनें:' : 'Select Your Role to Access:'}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                   {[
-                    { id: 'shop', label: isHindi ? 'दुकानदार / रेस्टोरेंट' : 'Shop / Restaurant', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
-                    { id: 'ngo', label: isHindi ? 'आश्रम / एनजीओ' : 'NGO / Ashram', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' }
+                    { id: 'shop', label: isHindi ? 'दुकानदार' : 'Shop', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
+                    { id: 'ngo', label: isHindi ? 'आश्रम/NGO' : 'NGO', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' },
+                    { id: 'rider', label: isHindi ? 'डिलीवरी' : 'Delivery', icon: Bike, activeColor: '#f59e0b', darkColor: '#d97706' }
                   ].map(tab => {
                     const Icon = tab.icon;
                     const isSelected = signinRole === tab.id;
@@ -643,11 +652,97 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                   <span>
                     {signinRole === 'shop'
                       ? (isHindi ? 'दुकानदार डैशबोर्ड में लॉगिन करें' : 'Sign In as Shop Partner')
-                      : (isHindi ? 'आश्रम/एनजीओ हब में लॉगिन करें' : 'Sign In as NGO Hub')}
+                      : signinRole === 'ngo'
+                      ? (isHindi ? 'आश्रम/एनजीओ हब में लॉगिन करें' : 'Sign In as NGO Hub')
+                      : (isHindi ? 'डिलीवरी सेवादार पोर्टल में लॉगिन करें' : 'Sign In as Delivery Partner')}
                   </span>
                   <ArrowRight size={18} />
                 </button>
               </form>
+
+              {/* ⚡ 1-Click Fast Category Access (3 Categories + Admin) */}
+              <div style={{
+                marginTop: '16px',
+                padding: '12px 14px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '12px',
+                border: '1.5px dashed #cbd5e1'
+              }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Sparkles size={14} color="#f59e0b" />
+                  <span>{isHindi ? 'त्वरित 1-क्लिक एक्सेस (3 श्रेणियां):' : 'Instant 1-Click Demo Portals (3 Categories):'}</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPortal('shop', state.shops[0]?.id, 'shop')}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #86efac',
+                      borderRadius: '8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: '#15803d',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    🏪 Govinda's Shop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPortal('ngo_donor', state.ngos[0]?.id, 'ngo')}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #93c5fd',
+                      borderRadius: '8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: '#1d4ed8',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    🏛️ Radha Rani Ashram
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPortal('ngo_donor', state.volunteers[0]?.id, 'volunteer')}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #fde68a',
+                      borderRadius: '8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: '#b45309',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    🚴 Arun Sharma Rider
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPortal('admin')}
+                    style={{
+                      padding: '6px 8px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: '#475569',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    🛡️ FSSAI Admin Desk
+                  </button>
+                </div>
+              </div>
 
               <div style={{ textAlign: 'center', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>

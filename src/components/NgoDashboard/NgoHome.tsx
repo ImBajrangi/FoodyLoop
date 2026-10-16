@@ -13,11 +13,15 @@ import {
   Sparkles,
   Heart,
   KeyRound,
-  X
+  X,
+  Compass,
+  Navigation,
+  Hand
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAppState } from '../../services/useAppState';
 import { Donation } from '../../types';
+import { LiveRecoveryMap } from '../Map/LiveRecoveryMap';
 
 export const NgoHome: React.FC = () => {
   const { state, cache } = useAppState();
@@ -25,10 +29,17 @@ export const NgoHome: React.FC = () => {
 
   const currentNgo = state.ngos.find(n => n.id === state.activeNgoId) || state.ngos[0];
   const [selectedVolunteer, setSelectedVolunteer] = useState(state.volunteers[0]?.id || 'd40e3757-896f-4108-bba6-53059f846cba');
-  const [ngoTab, setNgoTab] = useState<'available' | 'claimed'>('available');
+  const [ngoTab, setNgoTab] = useState<'available' | 'claimed' | 'map'>('available');
+  const [selectedDonationForMap, setSelectedDonationForMap] = useState<string | undefined>(undefined);
   const [enteredNgoOtp, setEnteredNgoOtp] = useState<{ [key: string]: string }>({});
   const [ngoOtpError, setNgoOtpError] = useState<{ [key: string]: string | null }>({});
   const [ngoSuccessBanner, setNgoSuccessBanner] = useState<string | null>(null);
+  
+  // Hands on Food Interest Modal State
+  const [handsOnModal, setHandsOnModal] = useState<Donation | null>(null);
+  const [handsOnMeals, setHandsOnMeals] = useState<number>(50);
+  const [handsOnNote, setHandsOnNote] = useState<string>('');
+
   const [claimedModal, setClaimedModal] = useState<{
     donation: Donation;
     otp: string;
@@ -44,6 +55,20 @@ export const NgoHome: React.FC = () => {
   const claimedDonations = state.donations.filter(d =>
     (currentNgo && d.matchedNgoId === currentNgo.id) || d.status === 'MATCHED' || d.status === 'COLLECTED' || d.status === 'DELIVERED'
   );
+
+  // Periodic real-time courier movement towards shop & ashram
+  React.useEffect(() => {
+    const activeDonationWithRider = state.donations.find(
+      d => d.riderStatus && d.riderStatus !== 'DELIVERED'
+    );
+    if (!activeDonationWithRider) return;
+
+    const interval = setInterval(() => {
+      cache.simulateRiderStep(activeDonationWithRider.id);
+    }, 4500);
+
+    return () => clearInterval(interval);
+  }, [state.donations]);
 
   if (!currentNgo) {
     return (
@@ -388,9 +413,79 @@ export const NgoHome: React.FC = () => {
             >
               {isHindi ? 'दावा किए गए व मार्गस्थ' : 'Claimed & In-Transit'} ({claimedDonations.length})
             </button>
+            <button
+              onClick={() => setNgoTab('map')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '10px',
+                fontSize: '0.82rem',
+                fontWeight: ngoTab === 'map' ? 800 : 700,
+                backgroundColor: ngoTab === 'map' ? '#f59e0b' : '#f1f5f9',
+                color: ngoTab === 'map' ? '#181617' : 'var(--color-text)',
+                border: ngoTab === 'map' ? '2px solid #d97706' : '2px solid #e2e8f0',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Compass size={14} />
+              <span>{isHindi ? 'लाइव मैप व रडार' : 'Live Recovery Map'}</span>
+            </button>
           </div>
 
-          {ngoTab === 'claimed' ? (
+          {ngoTab === 'map' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{
+                padding: '12px 16px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '12px',
+                border: '1.5px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Navigation size={18} color="#0284c7" />
+                  <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f172a' }}>
+                    {isHindi ? 'मथुरा-वृन्दावन लाइव कूरियर व खाद्य पुनर्प्राप्ति रडार' : 'Braj Real-time Surplus Food & Courier Radar'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    const activeWithRider = state.donations.find(d => d.riderStatus && d.riderStatus !== 'DELIVERED');
+                    if (activeWithRider) cache.simulateRiderStep(activeWithRider.id);
+                  }}
+                  style={{
+                    fontSize: '0.74rem',
+                    padding: '5px 12px',
+                    backgroundColor: '#10b981',
+                    color: '#ffffff',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⚡ Advance Courier Step (कूरियर आगे बढ़ाएं)
+                </button>
+              </div>
+
+              <LiveRecoveryMap
+                activeDonationId={selectedDonationForMap}
+                height="450px"
+                onPlaceHands={(donId) => {
+                  const targetDon = state.donations.find(d => d.id === donId);
+                  if (targetDon) {
+                    setHandsOnModal(targetDon);
+                    setHandsOnMeals(targetDon.quantity);
+                  }
+                }}
+              />
+            </div>
+          ) : ngoTab === 'claimed' ? (
             claimedDonations.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--color-text-muted)' }}>
                 <Bike size={36} color="#cbd5e1" style={{ margin: '0 auto 8px' }} />
@@ -619,14 +714,120 @@ export const NgoHome: React.FC = () => {
                       </div>
                     )}
 
-                    <button
-                      onClick={() => handleAcceptMatch(donation)}
-                      className="btn btn-primary"
-                      style={{ width: '100%', minHeight: '44px', fontSize: '0.9rem', justifyContent: 'center' }}
-                    >
-                      <CheckCircle size={18} />
-                      <span>{isHindi ? 'भोजन का दावा करें व ओटीपी प्राप्त करें' : 'CLAIM FOOD & GET PICKUP OTP'}</span>
-                    </button>
+                    {/* Hands On Food Multiple NGO Interests */}
+                    {donation.handsOnInterests && donation.handsOnInterests.length > 0 && (
+                      <div style={{
+                        backgroundColor: '#fffbeb',
+                        border: '1.5px solid #fde68a',
+                        borderRadius: '10px',
+                        padding: '8px 12px',
+                        marginBottom: '10px'
+                      }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#92400e', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>✋ {donation.handsOnInterests.length} {isHindi ? 'संस्थाओं ने इस भोजन पर हाथ रखा है (रुचि):' : 'Ashrams/NGOs have Hands on this Food:'}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {donation.handsOnInterests.map((interest, idx) => (
+                            <span key={idx} style={{
+                              fontSize: '0.72rem',
+                              backgroundColor: interest.ngoId === currentNgo.id ? '#fef3c7' : '#ffffff',
+                              border: interest.ngoId === currentNgo.id ? '1.5px solid #d97706' : '1px solid #fcd34d',
+                              color: '#78350f',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontWeight: 700
+                            }}>
+                              {interest.ngoName} ({interest.claimedMeals} {donation.unit})
+                              {interest.ngoId === currentNgo.id && ' ★ (You)'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Live Courier Tracking Snapshot (Heading to Shop) */}
+                    {donation.riderStatus && donation.riderStatus !== 'DELIVERED' && (
+                      <div style={{
+                        backgroundColor: '#ecfdf5',
+                        border: '1.5px solid #10b981',
+                        borderRadius: '10px',
+                        padding: '10px 12px',
+                        marginBottom: '10px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Bike size={18} color="#059669" />
+                            <div>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#065f46' }}>
+                                {donation.riderStatus === 'HEADING_TO_SHOP' 
+                                  ? (isHindi ? `🚴 डिलीवरी सेवादार दुकान से भोजन लेने जा रहा है (${donation.riderEtaMinutes || 6} मिनट)` : `🚴 Courier heading to Shop for pickup (${donation.riderEtaMinutes || 6} min ETA)`)
+                                  : donation.riderStatus === 'AT_SHOP_PICKUP'
+                                  ? (isHindi ? '📍 डिलीवरी सेवादार दुकान पर भोजन प्राप्त कर रहा है' : '📍 Courier at Shop collecting food batch')
+                                  : (isHindi ? `🛵 भोजन लेकर आश्रम की ओर रवाना (${donation.riderEtaMinutes || 8} मिनट)` : `🛵 En route to Ashram (${donation.riderEtaMinutes || 8} min ETA)`)}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: '#047857' }}>
+                                {donation.assignedVolunteerName} • {donation.riderPhone || '+91 98765 43210'}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedDonationForMap(donation.id);
+                              setNgoTab('map');
+                            }}
+                            style={{
+                              fontSize: '0.74rem',
+                              padding: '5px 12px',
+                              backgroundColor: '#059669',
+                              color: '#ffffff',
+                              borderRadius: '8px',
+                              fontWeight: 800,
+                              border: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {isHindi ? 'लाइव मैप 🗺️' : 'Live Map 🗺️'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dual Action Buttons */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '8px' }}>
+                      <button
+                        onClick={() => {
+                          setHandsOnModal(donation);
+                          setHandsOnMeals(donation.quantity);
+                        }}
+                        style={{
+                          minHeight: '44px',
+                          fontSize: '0.84rem',
+                          fontWeight: 800,
+                          backgroundColor: '#fef3c7',
+                          color: '#b45309',
+                          border: '2px solid #fde68a',
+                          borderBottom: '4px solid #f59e0b',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Hand size={17} />
+                        <span>{isHindi ? 'हाथ रखें (रुचि)' : 'Hands on Food'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleAcceptMatch(donation)}
+                        className="btn btn-primary"
+                        style={{ minHeight: '44px', fontSize: '0.86rem', justifyContent: 'center' }}
+                      >
+                        <CheckCircle size={17} />
+                        <span>{isHindi ? 'दावा करें व ओटीपी' : 'Claim & Get OTP'}</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -791,6 +992,133 @@ export const NgoHome: React.FC = () => {
             >
               <span>{isHindi ? 'क्लेम किए गए भोजन देखें' : 'VIEW CLAIMED DELIVERIES'}</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hands on Food Interactive Interest Modal */}
+      {handsOnModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.4rem' }}>✋</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
+                  {isHindi ? 'भोजन पर हाथ रखें (दावा रुचि)' : 'Hands on Food (Claim Interest)'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setHandsOnModal(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.84rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+              {isHindi
+                ? 'कोई भी आश्रम भोजन पर हाथ रखकर अपनी वितरण रुचि दर्ज कर सकता है। इससे तुरंत नजदीकी डिलीवरी सारथी को दुकान की ओर रवाना किया जाएगा।'
+                : 'Multiple Ashrams/NGOs can place hands on surplus food. A delivery partner will be instantly dispatched to the restaurant in real time.'}
+            </p>
+
+            <div style={{
+              backgroundColor: '#fffbeb',
+              border: '1.5px solid #fde68a',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              marginBottom: '16px',
+              fontSize: '0.82rem'
+            }}>
+              <div><strong>{isHindi ? 'व्यंजन:' : 'Item:'}</strong> {handsOnModal.foodItem}</div>
+              <div><strong>{isHindi ? 'दुकान/रेस्टोरेंट:' : 'Restaurant:'}</strong> {handsOnModal.donorShopName} ({handsOnModal.city})</div>
+              <div><strong>{isHindi ? 'कुल उपलब्ध:' : 'Total Available:'}</strong> {handsOnModal.quantity} {handsOnModal.unit}</div>
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '6px' }}>
+                {isHindi ? 'आपके आश्रम को कितनी थालियां चाहिए?' : 'How many meals can your Ashram distribute?'}
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={handsOnModal.quantity}
+                value={handsOnMeals}
+                onChange={(e) => setHandsOnMeals(Number(e.target.value))}
+                className="form-input"
+                style={{ width: '100%', height: '42px', fontSize: '1rem', fontWeight: 800 }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '6px' }}>
+                {isHindi ? 'विशेष टिप्पणी (वैकल्पिक):' : 'Special Note / Timing (Optional):'}
+              </label>
+              <input
+                type="text"
+                placeholder={isHindi ? 'उदा. वृद्ध माताओं के दोपहर प्रसाद हेतु' : 'e.g. For afternoon prasad seva'}
+                value={handsOnNote}
+                onChange={(e) => setHandsOnNote(e.target.value)}
+                className="form-input"
+                style={{ width: '100%', height: '40px', fontSize: '0.86rem' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setHandsOnModal(null)}
+                style={{
+                  flex: 1,
+                  minHeight: '44px',
+                  backgroundColor: '#f1f5f9',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {isHindi ? 'रद्द करें' : 'Cancel'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  cache.placeHandsOnFood(
+                    handsOnModal.id,
+                    currentNgo.id,
+                    currentNgo.name,
+                    Number(handsOnMeals),
+                    handsOnNote
+                  );
+                  setHandsOnModal(null);
+                  try {
+                    confetti({ particleCount: 75, spread: 60 });
+                  } catch {}
+                  setNgoSuccessBanner(
+                    isHindi
+                      ? `हाथ रखा गया! ${currentNgo.name} ने ${handsOnMeals} थाली पर दावा रुचि दर्ज की। डिलीवरी सारथी दुकान की ओर रवाना!`
+                      : `Hands on food confirmed! Courier dispatched to restaurant for pickup!`
+                  );
+                  setSelectedDonationForMap(handsOnModal.id);
+                  setNgoTab('map');
+                }}
+                className="btn btn-primary"
+                style={{
+                  flex: 1.5,
+                  minHeight: '44px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  justifyContent: 'center',
+                  backgroundColor: '#f59e0b',
+                  color: '#181617',
+                  border: '2px solid #d97706',
+                  boxShadow: '0 4px 0 #b45309'
+                }}
+              >
+                <span>✋ {isHindi ? 'हाथ रखें व सारथी ट्रैक करें' : 'Confirm & Track Rider'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

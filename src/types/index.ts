@@ -92,6 +92,41 @@ export interface FoodSafetyChecklist {
   withinWindow: boolean;
 }
 
+export interface HandsOnInterest {
+  ngoId: string;
+  ngoName: string;
+  claimedMeals: number;
+  placedAt: string;
+  note?: string;
+}
+
+export interface RestaurantCustomItem {
+  id: string;
+  shopId: string;
+  name: string;
+  hindiName: string;
+  category: 'Cooked Meals' | 'Snacks / Sweets' | 'Breads / Roti' | 'Rice & Lentils';
+  portionUnit: string;
+  defaultQuantity: number;
+  storageCondition: StorageCondition;
+  shelfLifeHours: number;
+  preparationTemperature: number;
+  isFssaiCompliant: boolean;
+  createdAt: string;
+}
+
+export interface DeliveryPartnerBenefit {
+  id: string;
+  title: string;
+  hindiTitle: string;
+  type: 'meal' | 'fuel' | 'insurance' | 'badge';
+  description: string;
+  hindiDescription: string;
+  providerNgoName: string;
+  status: 'available' | 'claimed';
+  badgeLabel: string;
+}
+
 export interface Donation {
   id: string;
   donorShopId: string;
@@ -122,7 +157,14 @@ export interface Donation {
   createdAt: string;
   collectedAt?: string;
   deliveredAt?: string;
+  handsOnInterests?: HandsOnInterest[];
+  riderLat?: number;
+  riderLng?: number;
+  riderStatus?: 'HEADING_TO_SHOP' | 'AT_SHOP_PICKUP' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
+  riderEtaMinutes?: number;
+  riderPhone?: string;
 }
+
 
 export interface ItemIntelligenceRecord {
   id: string;

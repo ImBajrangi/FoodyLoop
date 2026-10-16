@@ -30,9 +30,12 @@ const ON_TOPIC_KEYWORDS = [
   'food', 'भोजन', 'loop', 'foody', 'दान', 'donate', 'donation', 'surplus', 'अतिरिक्त',
   'otp', 'ओटीपी', 'code', 'कोड', 'handover', 'हैंडओवर', 'pickup', 'पिकअप', 'verify', 'सत्यापन',
   'fssai', 'एफएसएसएआई', 'safety', 'सुरक्षा', 'temperature', 'तापमान', 'hot', 'गरम', 'cold', 'chilled', 'expiry',
-  'shop', 'दुकान', 'restaurant', 'रेस्टोरेंट', 'halwai', 'हलवाई', 'kitchen', 'रसोई',
+  'shop', 'दुकान', 'restaurant', 'रेस्टोरेंट', 'halwai', 'हलवाई', 'kitchen', 'रसोई', 'item', 'items', 'dish', 'dishes', 'menu', 'व्यंजन',
   'ngo', 'एनजीओ', 'ashram', 'आश्रम', 'claim', 'दावा', 'widow', 'विधवा', 'elder', 'वृद्ध', 'capacity', 'क्षमता',
-  'volunteer', 'सेवादार', 'rider', 'राइडर', 'courier', 'कूरियर', 'delivery', 'वितरण',
+  'volunteer', 'सेवादार', 'rider', 'राइडर', 'courier', 'कूरियर', 'delivery', 'वितरण', 'partner', 'पार्टनर', 'benefit', 'benefits', 'perk', 'perks', 'सुविधा', 'लाभ', 'भत्ता', 'insurance', 'बीमा',
+  'hands on food', 'hands', 'हाथ रखना', 'हाथ', 'रुचि', 'interest',
+  'map', 'मैप', 'radar', 'रडार', 'live map', 'gps', 'नक्शा', 'transit', 'tracking', 'ट्रैकिंग', 'dispatch', 'डिस्पैच',
+  'category', 'categories', 'three categories', '3 categories', 'श्रेणी', 'pros', 'features', 'benefits', 'fayde', 'फायदे', 'policy', 'policies', 'नियम', 'नीति',
   'sponsor', 'प्रायोजन', 'annadaan', 'अन्नदान', 'birthday', 'जन्मदिन', 'punyatithi', 'पुण्यतिथि', '80g', 'tax', 'certificate', 'प्रमाण पत्र',
   'admin', 'एडमिन', 'officer', 'अधिकारी', 'regulator', 'audit', 'ऑडिट', 'license', 'लाइसेंस', 'permit', 'परमिट',
   'mathura', 'मथुरा', 'vrindavan', 'वृन्दावन', 'barsana', 'बरसाना', 'govardhan', 'गोवर्धन', 'braj', 'बृज',
@@ -211,16 +214,19 @@ export function generateRagResponse(input: RagContextInput): ChatMessage {
 
   // Personalized suggested follow-ups
   const suggestedActions = state.portal === 'shop' ? [
-    { label: isHindi ? 'भोजन दान कैसे करें?' : 'How to donate food?', actionQuery: isHindi ? 'भोजन दान करने की पूरी प्रक्रिया क्या है?' : 'What is the complete process to donate surplus food?' },
+    { label: isHindi ? 'व्यंजन सूची कैसे जोड़ें?' : 'Add Dishes to Menu', actionQuery: isHindi ? 'रेस्टोरेंट अपने नियमित व्यंजन व आइटम कैसे जोड़ें?' : 'How do restaurants add custom items/dishes?' },
     { label: isHindi ? 'ओटीपी नियम' : 'OTP Rules', actionQuery: isHindi ? 'हैंडओवर ओटीपी दुकानदार के पास क्यों रहता है?' : 'Why does the shopkeeper keep the handover OTP?' },
-    { label: isHindi ? 'तापमान सीमा' : 'Temperature limits', actionQuery: isHindi ? 'FSSAI के अनुसार गरम भोजन का तापमान कितना होना चाहिए?' : 'What is the required temperature for hot held food?' }
+    { label: isHindi ? '3 श्रेणियां व फायदे' : 'Platform Pros & Features', actionQuery: isHindi ? 'Foody Loop की तीनों श्रेणियों के लाभ व विशेषताएं क्या हैं?' : 'What are the features and benefits of the 3 platform categories?' }
   ] : state.portal === 'admin' ? [
     { label: isHindi ? 'दुकानों का सत्यापन' : 'Verify Shops', actionQuery: isHindi ? 'नई दुकानों को कैसे अधिकृत (Permit) करें?' : 'How to authorize pending shops?' },
     { label: isHindi ? 'कॉन्करेंसी सुरक्षा' : 'Concurrency Lock', actionQuery: isHindi ? 'डबल क्लेम रोकने की व्यवस्था क्या है?' : 'How does the atomic concurrency lock work?' }
+  ] : state.role === 'volunteer' ? [
+    { label: isHindi ? 'डिलीवरी सेवादार लाभ' : 'Rider Perks & Benefits', actionQuery: isHindi ? 'डिलीवरी सेवादारों को आश्रम व एनजीओ से क्या लाभ मिलते हैं?' : 'What benefits and perks do delivery partners receive from NGOs?' },
+    { label: isHindi ? 'लाइव मैप व नेविगेशन' : 'Live Map Navigation', actionQuery: isHindi ? 'लाइव मैप पर राइडर की लोकेशन व दुकान तक रूट कैसे दिखता है?' : 'How does the live recovery map show rider route to the shop?' }
   ] : [
-    { label: isHindi ? 'आश्रम भोजन दावा' : 'Claim for Ashram', actionQuery: isHindi ? 'आश्रम के लिए भोजन कैसे क्लेम करें?' : 'How to claim food for ashram?' },
+    { label: isHindi ? '✋ Hands on Food क्या है?' : '✋ What is Hands on Food?', actionQuery: isHindi ? 'Hands on Food (हाथ रखना) फीचर कैसे काम करता है?' : 'How does the Hands on Food interest sharing feature work?' },
     { label: isHindi ? 'ओटीपी सत्यापन' : 'OTP Verification', actionQuery: isHindi ? 'दुकानदार से ओटीपी लेकर कैसे भरें?' : 'How to enter OTP received from shopkeeper?' },
-    { label: isHindi ? 'अन्नदान प्रायोजन' : 'Sponsor Meals', actionQuery: isHindi ? 'जन्मदिन पर भोजन कैसे प्रायोजित करें?' : 'How to sponsor meals for ashrams?' }
+    { label: isHindi ? 'डिलीवरी राइडर लाभ' : 'Delivery Perks', actionQuery: isHindi ? 'राइडर्स को आश्रम से क्या लाभ और सुविधाएं दी जाती हैं?' : 'What perks do ashrams provide to delivery partners?' }
   ];
 
   return {
@@ -252,13 +258,16 @@ export async function generateRagResponseAsync(input: RagContextInput): Promise<
     const geminiResult = await askGeminiRag(query, state);
     if (geminiResult && geminiResult.text) {
       const suggestedActions = state.portal === 'shop' ? [
+        { label: isHindi ? 'व्यंजन सूची प्रबंधन' : 'Manage Dishes', actionQuery: isHindi ? 'रेस्टोरेंट अपने नियमित व्यंजन व आइटम कैसे जोड़ें?' : 'How do restaurants add dishes to their menu?' },
         { label: isHindi ? 'ओटीपी नियम' : 'How OTP works', actionQuery: isHindi ? 'हैंडओवर ओटीपी कैसे काम करता है?' : 'How does the handover OTP work?' },
-        { label: isHindi ? 'भोजन तापमान नियम (60°C)' : 'Food Temp Limits (60°C)', actionQuery: isHindi ? 'FSSAI के अनुसार गरम भोजन का तापमान कितना होना चाहिए?' : 'What is the required hot holding temperature?' },
-        { label: isHindi ? 'नया दान दर्ज करें' : 'How to donate', actionQuery: isHindi ? 'दुकानदार अतिरिक्त भोजन दान कैसे करें?' : 'How do shopkeepers donate surplus food?' }
+        { label: isHindi ? 'भोजन तापमान नियम (60°C)' : 'Food Temp Limits (60°C)', actionQuery: isHindi ? 'FSSAI के अनुसार गरम भोजन का तापमान कितना होना चाहिए?' : 'What is the required hot holding temperature?' }
+      ] : state.role === 'volunteer' ? [
+        { label: isHindi ? 'सेवादार लाभ व सुविधाएं' : 'Rider Perks', actionQuery: isHindi ? 'डिलीवरी सेवादारों को आश्रम से क्या लाभ मिलते हैं?' : 'What perks do ashrams provide to delivery partners?' },
+        { label: isHindi ? 'लाइव रडार मैप' : 'Live Radar Map', actionQuery: isHindi ? 'लाइव मैप पर राइडर की लोकेशन कैसे दिखती है?' : 'How does the live map track courier location?' }
       ] : [
+        { label: isHindi ? '✋ Hands on Food नियम' : '✋ Hands on Food Protocol', actionQuery: isHindi ? 'Hands on Food (हाथ रखना) फीचर कैसे काम करता है?' : 'How does the Hands on Food interest sharing feature work?' },
         { label: isHindi ? 'भोजन दावा प्रक्रिया' : 'How to claim meals', actionQuery: isHindi ? 'आश्रम भोजन का दावा कैसे करें?' : 'How do Ashrams claim surplus food?' },
-        { label: isHindi ? 'ओटीपी कहाँ भरना है?' : 'Where to enter OTP', actionQuery: isHindi ? 'दुकानदार से ओटीपी लेकर कहाँ भरना होता है?' : 'Where does the NGO enter the handover OTP?' },
-        { label: isHindi ? '80G आयकर छूट' : '80G Tax Exemption', actionQuery: isHindi ? 'अन्नदान पर 80G टैक्स छूट कैसे मिलती है?' : 'How does the 80G tax deduction work for sponsors?' }
+        { label: isHindi ? 'राइडर लाभ व सुविधाएं' : 'Delivery Perks', actionQuery: isHindi ? 'डिलीवरी पार्टनर्स को क्या लाभ दिए जाते हैं?' : 'What perks are given to delivery partners?' }
       ];
 
       return {

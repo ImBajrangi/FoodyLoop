@@ -5,12 +5,26 @@
  * - Foody Loop Platform Architecture & Workflows
  * - Role-specific operations (Shopkeeper, NGO, Volunteer, Donor, Admin)
  * - 4-digit Handover OTP Verification Security System
- * - Regional Geography (Mathura, Vrindavan, Barsana, Govardhan)
+ * - Regional Geography
  */
 
 export interface KnowledgeChunk {
   id: string;
-  topic: 'fssai_safety' | 'otp_handover' | 'shop_guide' | 'ngo_guide' | 'volunteer_guide' | 'donor_guide' | 'admin_guide' | 'general_platform' | 'troubleshooting';
+  topic:
+  | 'fssai_safety'
+  | 'otp_handover'
+  | 'shop_guide'
+  | 'ngo_guide'
+  | 'volunteer_guide'
+  | 'donor_guide'
+  | 'admin_guide'
+  | 'general_platform'
+  | 'troubleshooting'
+  | 'hands_on_food'
+  | 'delivery_benefits'
+  | 'restaurant_items'
+  | 'three_categories'
+  | 'platform_pros';
   title: string;
   hindiTitle: string;
   keywords: string[];
@@ -19,7 +33,6 @@ export interface KnowledgeChunk {
 }
 
 export const RAG_KNOWLEDGE_BASE: KnowledgeChunk[] = [
-  // 1. Handover OTP System
   {
     id: 'otp-protocol',
     topic: 'otp_handover',
@@ -222,5 +235,123 @@ A: New registrations are placed in 'Under Review' status. The Food Safety Office
 
 प्रश्न: नई दुकान या आश्रम को परमिट कैसे मिलता है?
 उत्तर: पंजीकरण के बाद खाद्य सुरक्षा अधिकारी (Admin) FSSAI लाइसेंस की जांच करके 1-क्लिक में अधिकृत (Permit) करते हैं।`
+  },
+
+  // 10. The 3 Core Platform Stakeholder Categories
+  {
+    id: 'three-categories-ecosystem',
+    topic: 'three_categories',
+    title: 'The 3 Core Stakeholder Categories: Shops, NGOs, Delivery Partners',
+    hindiTitle: '3 मुख्य श्रेणियां: दुकानें/रेस्टोरेंट, आश्रम/एनजीओ, डिलीवरी सारथी',
+    keywords: ['3 categories', 'categories', 'श्रेणियां', 'stakeholders', 'shops', 'ngos', 'delivery partners', 'riders', 'दुकानें', 'आश्रम', 'डिलीवरी'],
+    content: `Foody Loop is powered by 3 dedicated stakeholder categories working in synergy across the Braj Dham region:
+1. Shops & Restaurants (दुकानें व रेस्टोरेंट): Halwais, traditional Bhojanalayas, sweets shops, caterers, and temple kitchens. They declare surplus cooked food, manage custom dishes/menu items with pre-verified holding temperatures (>=60°C hot-held), maintain 100% FSSAI hygiene standards, and generate the secure 4-digit Handover OTP.
+2. NGOs & Ashrams (आश्रम व गैर-सरकारी संस्थाएं): Widow shelters, sadhu ashrams, and community kitchens (e.g. Sri Radha Rani Ashram, Vrindavan Seva Trust). They place 'Hands on Food' to express real-time distribution interest, claim verified surplus batches, inspect thermal packaging, and enter the shopkeeper's 4-digit OTP to verify receipt.
+3. Delivery Partners / Volunteer Couriers (डिलीवरी सेवा सारथी): E-rickshaw and scooter drivers equipped with FSSAI-grade insulated thermal boxes. They are tracked live via GPS radar moving towards the restaurant for food pickup, transport meals within 15-20 minutes, and receive high-value community benefits provided by partner Ashrams (free daily prasad thali, ₹150 daily fuel/mobility allowance, ₹2 Lakh medical insurance, and FSSAI safe food courier certificate).`,
+    hindiContent: `Foody Loop 3 प्रमुख श्रेणियों (स्टेकहोल्डर्स) के समन्वय पर आधारित है:
+1. दुकानें व रेस्टोरेंट (Shops & Restaurants): हलवाई, पारंपरिक भोजनालय, मिष्ठान भंडार एवं मंदिर रसोई। ये अतिरिक्त भोजन घोषित करते हैं, अपने नियमित व्यंजनों का तापमान प्रबंधित करते हैं (≥60°C), और सुरक्षित 4-अंकीय हैंडओवर ओटीपी रखते हैं।
+2. आश्रम व एनजीओ (NGOs & Ashrams): विधवा आश्रम, वृद्ध आश्रम, साधु सेवा ट्रस्ट एवं अन्नक्षेत्र (जैसे श्री राधा रानी आश्रम, वृन्दावन सेवा ट्रस्ट)। ये भोजन पर 'हाथ रखकर' अपनी वितरण रुचि दर्ज करते हैं, भोजन बैच क्लेम करते हैं, और दुकानदार का 4-अंकीय ओटीपी भरकर हैंडओवर की पुष्टि करते हैं।
+3. डिलीवरी सेवा सारथी (Delivery Partners): ई-रिक्शा व बाइक चालक जो इंसुलेटेड थर्मल बॉक्स के साथ भोजन का सुरक्षित व त्वरित परिवहन करते हैं। इनकी लाइव लोकेशन मैप पर दिखती है, और इन्हें आश्रमों द्वारा निःशुल्क भोजन, दैनिक ₹150 पेट्रोल/चार्जिंग भत्ता, ₹2 लाख का स्वास्थ्य बीमा एवं FSSAI प्रमाण पत्र मिलता है।`
+  },
+
+  // 11. "Hands on Food" (हाथ रखना / दावा रुचि) & Live Courier Tracking
+  {
+    id: 'hands-on-food-mechanism',
+    topic: 'hands_on_food',
+    title: 'Hands on Food (हाथ रखना / दावा रुचि) & Real-time Courier Dispatch',
+    hindiTitle: 'भोजन पर हाथ रखना (Hands on Food) व वास्तविक समय कूरियर रडार',
+    keywords: ['hands on food', 'हाथ रखना', 'हाथ रखें', 'interest', 'रुचि', 'claim interest', 'realtime courier', 'delivery boy', 'कहाँ पहुंचा', 'live tracking', 'map radar'],
+    content: `Hands on Food (हाथ रखना / दावा रुचि) Feature:
+- When a restaurant declares surplus meals, ANY registered Ashram or NGO can place their 'Hands on Food' by clicking '✋ Hands on Food (हाथ रखें)'.
+- Multiple Ashrams can place hands on the same food batch simultaneously! The system displays all interested Ashrams alongside requested portion counts (e.g. Radha Rani Ashram: 60 meals, Vrindavan Seva Trust: 40 meals).
+- Placing hands on food automatically activates the nearest delivery courier, who immediately begins navigating towards the donor restaurant to collect the hot food batch.
+- Real-time Courier Radar: The live map displays the courier vehicle puck moving in real time towards the restaurant (Status: HEADING_TO_SHOP, ETA countdown), then arriving at the shop (AT_SHOP_PICKUP), and finally delivering to the designated ashram (OUT_FOR_DELIVERY).
+- This ensures absolute transparency so both restaurants and ashrams know exactly where the delivery boy has reached at any second.`,
+    hindiContent: `'भोजन पर हाथ रखना' (Hands on Food) व लाइव सारथी ट्रैकिंग:
+- जब कोई रेस्टोरेंट अतिरिक्त भोजन घोषित करता है, तो कोई भी आश्रम '✋ भोजन पर हाथ रखें' बटन दबाकर अपनी रुचि दर्ज कर सकता है।
+- एक ही भोजन पर एक से अधिक आश्रम भी हाथ रख सकते हैं! सिस्टम सभी इच्छुक आश्रमों की सूची और उनकी आवश्यक थालियों की संख्या प्रदर्शित करता है।
+- जैसे ही भोजन पर हाथ रखा जाता है, सिस्टम तुरंत नजदीकी डिलीवरी सारथी को दुकान की ओर भोजन उठाने के लिए रवाना कर देता है।
+- लाइव रडार मैप पर दिखता है कि डिलीवरी बॉय इस समय कहाँ पहुँचा है, दुकान की ओर कितने मिनट में पहुँचेगा (HEADING_TO_SHOP), दुकान से कब भोजन उठा रहा है (AT_SHOP_PICKUP), और आश्रम की ओर कब निकला है।`
+  },
+
+  // 12. Delivery Partner Seva Perks & Community Benefits
+  {
+    id: 'delivery-partner-community-perks',
+    topic: 'delivery_benefits',
+    title: 'Delivery Partner Seva Perks & Community Benefits provided by Ashrams',
+    hindiTitle: 'डिलीवरी सेवादारों को आश्रमों व समुदाय द्वारा प्रदत्त सुविधाएं व लाभ',
+    keywords: ['benefits', 'perks', 'लाभ', 'सुविधाएं', 'free meal', 'निःशुल्क भोजन', 'prasad', 'प्रसाद', 'fuel allowance', 'पेट्रोल भत्ता', 'charging', 'insurance', 'बीमा', 'fssai certificate', 'rider benefits'],
+    content: `Community Perks & Benefits for Delivery Partners (Couriers):
+Partner Ashrams, NGOs, and the Foody Loop Community Fund provide 4 statutory welfare benefits to delivery riders:
+1. Free Daily Prasad Thali at Partner Ashrams (निःशुल्क दोपहर व रात्रि प्रसादम): Riders completing 2 or more food rescues are entitled to unlimited nutritious hot prasad thali at participating Vrindavan Ashrams (e.g. Sri Radha Rani Ashram).
+2. Daily Electric Scooter Charging & Fuel Allowance (₹150 दैनिक गतिशीलता भत्ता): Directly credited to riders completing 4 or more surplus pickups across Mathura & Vrindavan to offset mobility costs.
+3. Comprehensive Seva Volunteer Medical & Accident Cover (₹2 लाख सुरक्षा बीमा): Active delivery partners receive ₹2,00,000 zero-cost accidental and hospitalization coverage during active delivery shifts.
+4. FSSAI Certified Safe Food Courier Certificate (FSSAI विनियामक प्रमाण पत्र): Official digital certification issued jointly by FSSAI Mathura desk & Foody Loop acknowledging compliance with statutory food transport standards for career growth.`,
+    hindiContent: `डिलीवरी सेवादारों के लिए आश्रमों व समुदाय द्वारा प्रदत्त लाभ:
+1. सहयोगी आश्रमों में निःशुल्क दोपहर व रात्रि प्रसादम: 2 या अधिक पिकअप करने वाले सेवादारों को राधा रानी व अन्य आश्रमों में सम्मानपूर्वक निःशुल्क भोजन।
+2. दैनिक ₹150 ई-स्कूटर चार्जिंग व पेट्रोल सहायता भत्ता: मथुरा-वृन्दावन में 4 या अधिक पिकअप करने पर सीधा गतिशीलता भत्ता।
+3. ₹2,00,000 सम्पूर्ण स्वयंसेवक स्वास्थ्य व दुर्घटना सुरक्षा बीमा: ऑन-ड्यूटी भोजन परिवहन के दौरान सक्रिय राइडर्स को आपातकालीन बीमा।
+4. FSSAI प्रमाणित स्वच्छ भोजन कूरियर प्रमाण पत्र: FSSAI विनियामक अनुपालन का आधिकारिक डिजिटल प्रमाण पत्र व सेवा स्टार बैज।`
+  },
+
+  // 13. Restaurant Custom Food Items Management
+  {
+    id: 'restaurant-dishes-custom-items',
+    topic: 'restaurant_items',
+    title: 'Restaurant Custom Dishes & 1-Click Surplus Declaration',
+    hindiTitle: 'रेस्टोरेंट व्यंजन सूची प्रबंधन व 1-क्लिक अधिशेष भोजन घोषणा',
+    keywords: ['custom item', 'add item', 'dish', 'menu', 'व्यंजन', 'items', 'recipe', 'thali', '1-click', 'surplus declare', 'holding temperature'],
+    content: `Restaurant Custom Items & Dishes Management:
+- Restaurant owners and chefs can configure their complete catalog of regular preparation dishes under the 'My Restaurant Dishes' (व्यंजन सूची प्रबंधन) tab.
+- Key parameters saved per dish:
+  * Dish Name in English & Hindi (e.g. Braj Special Paneer Bedmi Poori Thali / बृज स्पेशल पनीर पूरी).
+  * Food Category: Cooked Meals, Snacks / Sweets, Breads / Roti, Rice & Lentils.
+  * Default Portion Unit: Plates, Portions, Kg, Packets.
+  * Standard Batch Quantity & Preparation Temperature (>=68°C for hot gravies, room temp for dry sweets).
+  * Safe Shelf Life (hours) verified against FSSAI holding standards.
+- 1-Click Surplus Declare (1-क्लिक अधिशेष घोषणा): When a batch remains unsold after afternoon or evening service, the chef clicks '1-Click Surplus Declare' on that item card. The system instantly pre-fills all safety parameters, generates the 4-digit Handover OTP, and broadcasts the donation to nearby ashrams in seconds!`,
+    hindiContent: `रेस्टोरेंट व्यंजन प्रबंधन व 1-क्लिक अधिशेष घोषणा:
+- रेस्टोरेंट व हलवाई अपनी दुकान के सभी नियमित व्यंजनों को 'व्यंजन सूची प्रबंधन' टैब में एक बार सेव करके रख सकते हैं।
+- इसमें व्यंजन का नाम (हिंदी व अंग्रेजी), श्रेणी, डिफ़ॉल्ट मात्रा, थाली/किलो यूनिट, पकाने का तापमान (≥60°C) और सुरक्षित समय दर्ज होता है।
+- 1-क्लिक अधिशेष घोषणा: दोपहर या रात की सेवा के बाद अतिरिक्त भोजन बचने पर शेफ सीधे उस व्यंजन के कार्ड पर '1-Click Surplus Declare' दबाते हैं। बिना दोबारा टाइप किए तुरंत 4-अंकीय ओटीपी बन जाता है और नजदीकी आश्रमों को अलर्ट चला जाता है।`
+  },
+
+  // 14. Platform Benefits, Pros, and Statutory Policies
+  {
+    id: 'platform-benefits-and-pros',
+    topic: 'platform_pros',
+    title: 'Platform Pros, Benefits, and Statutory Policies of Foody Loop',
+    hindiTitle: 'Foody Loop के संपूर्ण फायदे, लाभ, विनियामक नीतियां एवं विशेषताएं',
+    keywords: ['features', 'pros', 'benefits', 'फायदे', 'लाभ', 'policies', 'नीतियां', 'advantages', 'fssai regulations', 'why foody loop', 'zero wastage'],
+    content: `Comprehensive Features, Pros, and Statutory Benefits of Foody Loop:
+1. For Restaurants & Halwais:
+   - 100% Zero Food Waste: Unsold pure vegetarian food is rescued within minutes instead of spoiling.
+   - Reputation Tier Upgrades: Successful donors earn reputation points, moving up to 'Trusted Partner' tier recognized by district authorities.
+   - Statutory FSSAI Protection: Full adherence to FSSAI Surplus Food Recovery Regulations 2019 protects donors from liability when adhering to holding temperatures.
+   - Confidential 4-Digit OTP Security: Guarantees food is handed over only to authorized, verified couriers.
+2. For Ashrams & Beneficiaries:
+   - Fresh, Dignified, High-Protein Meals: Elderly mothers, sadhus, and pilgrim shelters receive hot Sattvik food directly inside thermal vessels.
+   - Real-time Courier Radar: Ashrams see live GPS tracking of the delivery boy heading to the restaurant and towards their doorstep.
+   - 'Hands on Food' Co-Sharing: Multiple ashrams can divide large surplus donations harmoniously according to their daily capacity.
+3. For Delivery Partners:
+   - Community Seva Perks: Free daily prasad thalis, daily fuel stipends, ₹2 Lakh medical insurance cover, and professional career certification.
+4. For Society & Environment:
+   - Significant Methane Emission Reduction: Preventing cooked food from decomposing in municipal open landfills.
+   - Direct Alignment with UN Sustainable Development Goals: SDG 2 (Zero Hunger) & SDG 12 (Responsible Consumption & Production).`,
+    hindiContent: `Foody Loop के सभी प्रमुख फीचर्स, लाभ और नीतियां:
+1. रेस्टोरेंट व हलवाइयों के लिए:
+   - शून्य अन्न बर्बादी: शुद्ध शाकाहारी अतिरिक्त भोजन मिनटों में जरूरतमंदों तक पहुँचता है।
+   - प्रतिष्ठा स्कोर व FSSAI बैज: नियमित दाताओं को FSSAI द्वारा 'विश्वस्त भागीदार' (Trusted Partner) की मान्यता मिलती है।
+   - कानूनी सुरक्षा: FSSAI 2019 नियमों के तहत तापमान मानकों का पालन करने पर पूर्ण विधिक संरक्षण।
+   - 4-अंकीय ओटीपी सुरक्षा: अनधिकृत दावों या फर्जी दावों से 100% सुरक्षा।
+2. आश्रमों व लाभार्थियों के लिए:
+   - गरमा-गरम सात्त्विक भोजन: वृद्ध माताओं और साधुओं को स्वच्छ इंसुलेटेड बर्तनों में पौष्टिक आहार।
+   - लाइव कूरियर रडार: डिलीवरी बॉय दुकान से भोजन कब ले रहा है, इसका रियल-टाइम मैप।
+   - 'हाथ रखने' की सुविधा: एक से अधिक आश्रम आपस में बड़े भोजन बैच को बांट सकते हैं।
+3. डिलीवरी सेवादारों के लिए:
+   - आश्रमों में मुफ्त भोजन, दैनिक पेट्रोल भत्ता, ₹2 लाख का स्वास्थ्य बीमा एवं FSSAI प्रमाण पत्र।
+4. पर्यावरण व समाज के लिए:
+   - लैंडफिल मीथेन गैस में कमी एवं संयुक्त राष्ट्र SDG 2 (शून्य भुखमरी) के लक्ष्य की पूर्ति।`
   }
 ];
+

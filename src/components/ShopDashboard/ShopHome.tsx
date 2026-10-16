@@ -20,13 +20,15 @@ import { SalesVsPrepAnalytics } from './SalesVsPrepAnalytics';
 import { ItemIntelligence } from './ItemIntelligence';
 import { RawMaterialPlanner } from './RawMaterialPlanner';
 import { AIPredictionCard } from './AIPredictionCard';
+import { RestaurantItemsManager } from './RestaurantItemsManager';
 import { TRANSLATIONS } from '../../data/translations';
+import type { RestaurantCustomItem, Donation } from '../../types';
 
 interface ShopHomeProps {
   onOpenDonate: () => void;
 }
 
-type TabType = 'analytics' | 'donations' | 'planner';
+type TabType = 'analytics' | 'donations' | 'planner' | 'menu';
 
 export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
   const { state, cache } = useAppState();
@@ -62,6 +64,45 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
     } catch {
       // clipboard fallback
     }
+  };
+
+  const handleQuickSurplusFromItem = (item: RestaurantCustomItem) => {
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const safeUntilDate = new Date(Date.now() + (item.shelfLifeHours || 4) * 3600000);
+    const newDonation: Donation = {
+      id: `DON-${Date.now().toString().slice(-4)}`,
+      donorShopId: currentShop?.id || state.activeShopId || 'ff22da9a-2623-4387-af37-6a8bb50bb19f',
+      donorShopName: currentShop?.name || "Govinda's Restaurant & Bhojanalaya",
+      city: currentShop?.city || 'Vrindavan',
+      foodItem: item.name,
+      foodCategory: item.category,
+      quantity: item.defaultQuantity,
+      unit: item.portionUnit,
+      preparedAt: new Date(Date.now() - 30 * 60000).toISOString(),
+      readyAt: new Date().toISOString(),
+      safeUntil: safeUntilDate.toISOString(),
+      storageCondition: item.storageCondition,
+      packagingStatus: 'Thermal Insulated Urns (FSSAI Grade)',
+      handlingInstructions: item.storageCondition === 'hot_held' 
+        ? `Maintain temperature >=${item.preparationTemperature}°C inside thermal vessels` 
+        : 'Protect from moisture and ambient heat',
+      allergenNotice: 'Pure Sattvik Vegetarian (No onion, no garlic). Contains dairy/ghee.',
+      status: 'AVAILABLE',
+      fssaiChecklist: {
+        preparedFresh: true,
+        hygieneDeclaration: true,
+        cleanPackaging: true,
+        temperatureVerified: true,
+        withinWindow: true
+      },
+      targetBeneficiaryName: 'श्री राधा रानी विधवा व वृद्ध आश्रम (वृन्दावन)',
+      distanceKm: 1.8,
+      estimatedTravelTimeMin: 12,
+      otpCode: otp,
+      createdAt: new Date().toISOString()
+    };
+    cache.addDonation(newDonation);
+    setActiveTab('donations');
   };
 
   if (!currentShop) {
@@ -498,6 +539,40 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
           <Boxes size={18} />
           <span>{isHindi ? 'राशन व कल की तैयारी' : 'Pantry & Tomorrow Plan'}</span>
         </button>
+
+        {/* Tab 4: Restaurant Dishes / Menu */}
+        <button
+          onClick={() => setActiveTab('menu')}
+          style={{
+            minHeight: '46px',
+            padding: '0 20px',
+            fontSize: '0.92rem',
+            borderRadius: '14px',
+            fontWeight: 800,
+            backgroundColor: activeTab === 'menu' ? '#ffffff' : 'transparent',
+            color: activeTab === 'menu' ? '#d97706' : 'var(--color-text)',
+            border: activeTab === 'menu' ? '2px solid #f59e0b' : '2px solid transparent',
+            boxShadow: activeTab === 'menu' ? '0 4px 0 #d97706' : 'none',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <UtensilsCrossed size={18} />
+          <span>{isHindi ? 'व्यंजन सूची' : 'My Restaurant Dishes'}</span>
+          <span style={{
+            backgroundColor: activeTab === 'menu' ? '#f59e0b' : '#e2e8f0',
+            color: activeTab === 'menu' ? '#181617' : '#475569',
+            borderRadius: '20px',
+            padding: '2px 8px',
+            fontSize: '0.74rem',
+            fontWeight: 900
+          }}>
+            {state.restaurantItems?.length || 4}
+          </span>
+        </button>
       </div>
 
       {/* TAB 1: KITCHEN SAVINGS & SCORECARD */}
@@ -703,6 +778,11 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
           <RawMaterialPlanner />
           <AIPredictionCard />
         </div>
+      )}
+
+      {/* TAB 4: MY RESTAURANT DISHES & CUSTOM ITEMS */}
+      {activeTab === 'menu' && (
+        <RestaurantItemsManager onQuickDonateSurplus={handleQuickSurplusFromItem} />
       )}
     </div>
   );

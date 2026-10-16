@@ -9,11 +9,13 @@ import {
   Clock, 
   KeyRound,
   Sparkles,
-  PhoneCall
+  PhoneCall,
+  Gift
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAppState } from '../../services/useAppState';
 import { Donation } from '../../types';
+import { LiveRecoveryMap } from '../Map/LiveRecoveryMap';
 
 export const DeliveryView: React.FC = () => {
   const { state, cache } = useAppState();
@@ -260,6 +262,42 @@ export const DeliveryView: React.FC = () => {
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Drop: Vrindavan Ashram</div>
               </div>
             </div>
+          </div>
+
+          {/* Real-time GPS Navigation Map */}
+          <div style={{ marginBottom: '22px' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '8px',
+              padding: '6px 10px',
+              backgroundColor: '#f8fafc',
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Navigation size={16} color="#059669" />
+                Live Turn-by-Turn GPS Radar (लाइव नेविगेशन)
+              </span>
+              <button
+                type="button"
+                onClick={() => cache.simulateRiderStep(activeJob.id)}
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '4px 10px',
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                ⚡ Advance Rider Step (स्थान आगे बढ़ाएं)
+              </button>
+            </div>
+            <LiveRecoveryMap activeDonationId={activeJob.id} height="320px" />
           </div>
 
           {/* Item details */}
@@ -564,6 +602,122 @@ export const DeliveryView: React.FC = () => {
           </p>
         </div>
       )}
+
+      {/* SEVA PERKS & ASHRAM COMMUNITY BENEFITS SECTION */}
+      <div className="glass-panel" style={{
+        padding: '24px',
+        marginTop: '24px',
+        backgroundColor: '#ffffff',
+        borderRadius: '16px',
+        border: '2px solid #e2e8f0',
+        borderBottom: '4px solid #cbd5e1'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          marginBottom: '18px',
+          borderBottom: '2px solid #f1f5f9',
+          paddingBottom: '14px'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.4rem' }}>🎁</span>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                Delivery Partner Seva Perks & Community Benefits (सेवादार कल्याण व सुविधाएं)
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 0 0' }}>
+              Funded & distributed by partner Ashrams, NGOs, and the Foody Loop Community Fund to support our active delivery riders.
+            </p>
+          </div>
+          <span className="badge badge-emerald" style={{ fontWeight: 800, fontSize: '0.78rem' }}>
+            4 Active Seva Perks
+          </span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+          {state.deliveryBenefits?.map(benefit => (
+            <div
+              key={benefit.id}
+              style={{
+                backgroundColor: benefit.status === 'claimed' ? '#f0fdf4' : '#fafafa',
+                border: benefit.status === 'claimed' ? '2px solid #86efac' : '2px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    backgroundColor: benefit.type === 'meal' ? '#fef3c7' : benefit.type === 'fuel' ? '#e0f2fe' : benefit.type === 'insurance' ? '#f3e8ff' : '#dcfce7',
+                    color: benefit.type === 'meal' ? '#b45309' : benefit.type === 'fuel' ? '#0369a1' : benefit.type === 'insurance' ? '#7e22ce' : '#15803d',
+                    padding: '3px 8px',
+                    borderRadius: '8px'
+                  }}>
+                    {benefit.badgeLabel}
+                  </span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    color: benefit.status === 'claimed' ? '#16a34a' : '#64748b'
+                  }}>
+                    {benefit.status === 'claimed' ? '✓ Active / Claimed' : 'Available'}
+                  </span>
+                </div>
+
+                <h4 style={{ fontSize: '0.94rem', fontWeight: 800, color: '#1e293b', margin: '0 0 4px 0' }}>
+                  {benefit.title}
+                </h4>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, marginBottom: '8px' }}>
+                  {benefit.hindiTitle}
+                </div>
+                <p style={{ fontSize: '0.76rem', color: '#475569', lineHeight: 1.4, margin: '0 0 10px 0' }}>
+                  {benefit.description}
+                </p>
+                <div style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 700, backgroundColor: '#f0f9ff', padding: '4px 8px', borderRadius: '6px' }}>
+                  Provider: {benefit.providerNgoName}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  cache.claimDeliveryBenefit(benefit.id);
+                  if (benefit.status !== 'claimed') {
+                    try { confetti({ particleCount: 60, spread: 50 }); } catch {}
+                    setStatusNotice(`Perk "${benefit.title}" successfully claimed!`);
+                    setTimeout(() => setStatusNotice(null), 4000);
+                  }
+                }}
+                style={{
+                  marginTop: '14px',
+                  width: '100%',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: benefit.status === 'claimed' ? '#dcfce7' : '#0f172a',
+                  color: benefit.status === 'claimed' ? '#15803d' : '#ffffff',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {benefit.status === 'claimed' ? '✓ Benefit Activated (सक्रिय)' : 'Claim Benefit (लाभ प्राप्त करें)'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

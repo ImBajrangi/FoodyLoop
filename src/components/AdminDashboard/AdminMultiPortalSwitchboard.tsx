@@ -215,10 +215,46 @@ export const AdminMultiPortalSwitchboard: React.FC<AdminMultiPortalSwitchboardPr
               >
                 {state.shops.map(s => (
                   <option key={s.id} value={s.id}>
-                    {s.name} ({s.location}, {s.city})
+                    {s.name} ({s.location}, {s.city}) {s.verified ? (isHindi ? '✓ [सत्यापित / Permitted]' : '✓ [Permitted]') : (isHindi ? '[समीक्षाधीन]' : '[Under Review]')}
                   </option>
                 ))}
               </select>
+
+              {/* Direct Access to Permitted Shops */}
+              <div style={{ marginTop: '10px' }}>
+                <div style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 800, marginBottom: '6px' }}>
+                  {isHindi ? 'सत्यापित दुकानें (तुरंत पहुंचें):' : 'Permitted Shops (Click to Access):'}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {state.shops.filter(s => s.verified).map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedShopId(s.id);
+                        onSelectPortal('shop', s.id);
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '14px',
+                        border: '1.5px solid #86efac',
+                        backgroundColor: '#f0fdf4',
+                        color: '#166534',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      title={isHindi ? `${s.name} में प्रवेश करें` : `Enter ${s.name}`}
+                    >
+                      <CheckCircle2 size={12} color="#16a34a" />
+                      <span>{s.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -319,10 +355,46 @@ export const AdminMultiPortalSwitchboard: React.FC<AdminMultiPortalSwitchboardPr
               >
                 {state.ngos.map(n => (
                   <option key={n.id} value={n.id}>
-                    {n.name} ({n.city})
+                    {n.name} ({n.city}) {n.verified ? (isHindi ? '✓ [सत्यापित / Permitted]' : '✓ [Permitted]') : (isHindi ? '[समीक्षाधीन]' : '[Under Review]')}
                   </option>
                 ))}
               </select>
+
+              {/* Direct Access to Permitted NGOs */}
+              <div style={{ marginTop: '10px' }}>
+                <div style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 800, marginBottom: '6px' }}>
+                  {isHindi ? 'सत्यापित आश्रम (तुरंत पहुंचें):' : 'Permitted NGOs (Click to Access):'}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {state.ngos.filter(n => n.verified).map(n => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedNgoId(n.id);
+                        onSelectPortal('ngo_donor', n.id);
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '14px',
+                        border: '1.5px solid #93c5fd',
+                        backgroundColor: '#eff6ff',
+                        color: '#1e40af',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      title={isHindi ? `${n.name} में प्रवेश करें` : `Enter ${n.name}`}
+                    >
+                      <CheckCircle2 size={12} color="#2563eb" />
+                      <span>{n.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

@@ -280,13 +280,17 @@ class CacheService {
     forecasts?: DemandForecast[];
   }) {
     if (data.shops && data.shops.length > 0) {
-      this.state.shops = data.shops;
+      const liveIds = new Set(data.shops.map(s => s.id));
+      const localShops = this.state.shops.filter(s => !liveIds.has(s.id));
+      this.state.shops = [...data.shops, ...localShops];
       if (!this.state.shops.some(s => s.id === this.state.activeShopId)) {
         this.state.activeShopId = this.state.shops[0].id;
       }
     }
     if (data.ngos && data.ngos.length > 0) {
-      this.state.ngos = data.ngos;
+      const liveIds = new Set(data.ngos.map(n => n.id));
+      const localNgos = this.state.ngos.filter(n => !liveIds.has(n.id));
+      this.state.ngos = [...data.ngos, ...localNgos];
       if (!this.state.ngos.some(n => n.id === this.state.activeNgoId)) {
         this.state.activeNgoId = this.state.ngos[0].id;
       }

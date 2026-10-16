@@ -16,7 +16,8 @@ import {
   RotateCcw,
   Sparkles,
   Clock,
-  Compass
+  Compass,
+  ArrowRight
 } from 'lucide-react';
 import { useAppState } from '../../services/useAppState';
 import { simulateAtomicClaimRaceCondition, ConcurrencyTestReport } from '../../services/concurrencyTest';
@@ -27,6 +28,7 @@ import { AdminMultiPortalSwitchboard } from './AdminMultiPortalSwitchboard';
 
 export const AdminControlRoom: React.FC = () => {
   const { state, cache } = useAppState();
+  const isHindi = state.language === 'hi';
 
   const [activeAdminTab, setActiveAdminTab] = useState<'approvals' | 'overview' | 'verifications' | 'safety' | 'concurrency' | 'logs' | 'switchboard'>('approvals');
 
@@ -886,7 +888,28 @@ export const AdminControlRoom: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => cache.setPortal('shop', s.id, 'shop')}
+                      style={{
+                        backgroundColor: '#ecfdf5',
+                        border: '1.5px solid #a7f3d0',
+                        color: '#065f46',
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        padding: '5px 12px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                      title={isHindi ? `${s.name} का पोर्टल सीधे खोलें` : `Open ${s.name} portal directly`}
+                    >
+                      <span>{isHindi ? 'दुकान पोर्टल खोलें' : 'Open Shop Portal'}</span>
+                      <ArrowRight size={13} />
+                    </button>
+
                     <button
                       onClick={() => handleHold(s.id, s.name)}
                       disabled={Boolean(actionLoading[s.id])}
@@ -984,7 +1007,28 @@ export const AdminControlRoom: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f1f5f9', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => cache.setPortal('ngo_donor', n.id, 'ngo')}
+                      style={{
+                        backgroundColor: '#eff6ff',
+                        border: '1.5px solid #bfdbfe',
+                        color: '#1e40af',
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        padding: '5px 12px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                      title={isHindi ? `${n.name} का पोर्टल सीधे खोलें` : `Open ${n.name} portal directly`}
+                    >
+                      <span>{isHindi ? 'आश्रम पोर्टल खोलें' : 'Open NGO Portal'}</span>
+                      <ArrowRight size={13} />
+                    </button>
+
                     <button
                       onClick={() => handleHold(n.id, n.name)}
                       disabled={Boolean(actionLoading[n.id])}
@@ -1194,18 +1238,53 @@ export const AdminControlRoom: React.FC = () => {
             Active Verified Entities &amp; FSSAI Badges
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-            {state.shops.map(s => (
-              <div key={s.id} style={{ background: '#f8fafc', border: '1px solid var(--border-light)', padding: '14px', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{s.name}</div>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>FSSAI: {s.fssaiNumber}</div>
+            {state.shops.filter(s => s.verified).map(s => (
+              <div key={s.id} style={{ background: '#f8fafc', border: '1px solid var(--border-light)', padding: '14px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '10px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.94rem' }}>{s.name}</div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>FSSAI: #{s.fssaiNumber}</div>
+                    </div>
+                    <span className="badge badge-emerald" style={{ fontWeight: 800 }}>✓ Permitted Shop</span>
                   </div>
-                  <span className="badge badge-emerald">Verified</span>
+                  <div style={{ fontSize: '0.75rem', marginTop: '6px', color: '#475569' }}>
+                    Reputation: <strong>{s.reputationScore}/100 ({s.reputationTier})</strong> • {s.city}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.75rem', marginTop: '8px' }}>
-                  Reputation: <strong>{s.reputationScore}/100 ({s.reputationTier})</strong>
+                <button
+                  onClick={() => cache.setPortal('shop', s.id, 'shop')}
+                  className="btn btn-secondary"
+                  style={{ width: '100%', minHeight: '34px', fontSize: '0.76rem', justifyContent: 'center', gap: '6px' }}
+                >
+                  <span>{isHindi ? 'दुकान पोर्टल खोलें' : 'Open Shop Portal'}</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            ))}
+
+            {state.ngos.filter(n => n.verified).map(n => (
+              <div key={n.id} style={{ background: '#f8fafc', border: '1px solid var(--border-light)', padding: '14px', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '10px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.94rem' }}>{n.name}</div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Capacity: {n.capacity} meals/day</div>
+                    </div>
+                    <span className="badge badge-neutral" style={{ fontWeight: 800, backgroundColor: '#eff6ff', color: '#1e40af', borderColor: '#bfdbfe' }}>✓ Permitted NGO</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', marginTop: '6px', color: '#475569' }}>
+                    Reputation: <strong>{n.reputationScore}/100 ({n.reputationTier})</strong> • {n.city}
+                  </div>
                 </div>
+                <button
+                  onClick={() => cache.setPortal('ngo_donor', n.id, 'ngo')}
+                  className="btn btn-secondary"
+                  style={{ width: '100%', minHeight: '34px', fontSize: '0.76rem', justifyContent: 'center', gap: '6px' }}
+                >
+                  <span>{isHindi ? 'आश्रम पोर्टल खोलें' : 'Open NGO Portal'}</span>
+                  <ArrowRight size={13} />
+                </button>
               </div>
             ))}
           </div>

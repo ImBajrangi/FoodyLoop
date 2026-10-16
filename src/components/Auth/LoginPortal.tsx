@@ -428,11 +428,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                       </div>
                       <select
                         className="form-input"
-                        style={{ height: '36px', fontSize: '0.8rem', backgroundColor: '#f8fafc', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ height: '38px', fontSize: '0.8rem', backgroundColor: '#f8fafc', fontWeight: 600, cursor: 'pointer' }}
                         value=""
                         onChange={e => {
                           if (e.target.value) {
                             setSigninPhone(e.target.value);
+                            setSigninPassword('1234');
                             setSigninError(null);
                             setUnregisteredNumber(null);
                           }
@@ -447,7 +448,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                           const raw = s.phone.replace(/\D/g, '').slice(-10);
                           return (
                             <option key={s.id} value={raw}>
-                              {s.name} ({s.city}) - +91 {raw}
+                              {s.name} ({s.city}) {s.verified ? (isHindi ? '✓ [सत्यापित / Permitted]' : '✓ [Permitted]') : (isHindi ? '[समीक्षाधीन / Under Review]' : '[Under Review]')} - +91 {raw}
                             </option>
                           );
                         })}
@@ -455,11 +456,67 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                           const raw = n.phone.replace(/\D/g, '').slice(-10);
                           return (
                             <option key={n.id} value={raw}>
-                              {n.name} ({n.city}) - +91 {raw}
+                              {n.name} ({n.city}) {n.verified ? (isHindi ? '✓ [सत्यापित / Permitted]' : '✓ [Permitted]') : (isHindi ? '[समीक्षाधीन / Under Review]' : '[Under Review]')} - +91 {raw}
                             </option>
                           );
                         })}
                       </select>
+
+                      {/* Clickable Permitted Organizations List for Direct Access */}
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{
+                          fontSize: '0.74rem',
+                          color: '#15803d',
+                          fontWeight: 800,
+                          marginBottom: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}>
+                          <CheckCircle2 size={13} color="#16a34a" />
+                          <span>
+                            {signinRole === 'shop'
+                              ? (isHindi ? 'सत्यापित दुकानें (सीधे एक्सेस करें):' : 'Permitted Shops (Click to Access):')
+                              : (isHindi ? 'सत्यापित आश्रम/संस्थाएं (सीधे एक्सेस करें):' : 'Permitted NGOs (Click to Access):')}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {(signinRole === 'shop'
+                            ? state.shops.filter(s => s.verified)
+                            : state.ngos.filter(n => n.verified)
+                          ).map(item => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                if (signinRole === 'shop') {
+                                  onSelectPortal('shop', item.id, 'shop');
+                                } else {
+                                  onSelectPortal('ngo_donor', item.id, 'ngo');
+                                }
+                              }}
+                              style={{
+                                padding: '5px 11px',
+                                borderRadius: '18px',
+                                border: signinRole === 'shop' ? '1.5px solid #86efac' : '1.5px solid #93c5fd',
+                                backgroundColor: signinRole === 'shop' ? '#f0fdf4' : '#eff6ff',
+                                color: signinRole === 'shop' ? '#166534' : '#1e40af',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                              title={isHindi ? `${item.name} में सीधे प्रवेश करें` : `Enter ${item.name} directly`}
+                            >
+                              <CheckCircle2 size={12} color={signinRole === 'shop' ? '#16a34a' : '#2563eb'} />
+                              <span>{item.name}</span>
+                              <span style={{ fontSize: '0.67rem', opacity: 0.75 }}>({item.city})</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

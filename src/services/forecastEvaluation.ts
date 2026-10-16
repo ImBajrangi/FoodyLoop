@@ -1,5 +1,5 @@
 /**
- * Food Loop - Statistical Forecast Evaluation & Error Backtesting Engine
+ * Foody Loop - Statistical Forecast Evaluation & Error Backtesting Engine
  * Adheres to strict operational data-science standards:
  * Compares Day-of-Week historical baselines vs Moving Averages using MAE, WAPE, and Forecast Bias.
  */
@@ -68,7 +68,7 @@ export function evaluateForecastingReliability(actualHistory: number[]): Forecas
 
   let statWarning = '';
   if (!sampleSizeReliable) {
-    statWarning = 
+    statWarning =
       `STATISTICAL CONFIDENCE CAUTION (N=${n} days): Sample size is below the N≥30 normality threshold. ` +
       `Gaussian (μ ± 1.96σ) bounds must be treated as indicative heuristic guides, not mathematically certified probability intervals. ` +
       `Deploying complex ML (LightGBM/XGBoost) is deferred until minimum 60 days of real shop POS records are logged.`;

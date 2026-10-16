@@ -1,5 +1,5 @@
 -- ============================================================================
--- FOOD LOOP — Complete Production PostgreSQL DDL & Hardened Security Architecture
+-- Foody Loop — Complete Production PostgreSQL DDL & Hardened Security Architecture
 -- Target: Mathura–Vrindavan–Barsana Region
 -- Standard: Full 28 Normalized Entities, Comprehensive Multi-Tenant RLS on All Tables,
 --           SECURITY DEFINER with Fixed search_path & Caller Authorization,
@@ -355,7 +355,7 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-    RAISE EXCEPTION 'FOOD LOOP SECURITY VIOLATION: Audit log records are legally immutable under Schedule I compliance and cannot be updated or deleted.';
+    RAISE EXCEPTION 'Foody Loop SECURITY VIOLATION: Audit log records are legally immutable under Schedule I compliance and cannot be updated or deleted.';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -371,7 +371,7 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-    RAISE EXCEPTION 'FOOD LOOP SECURITY VIOLATION: TRUNCATE is strictly forbidden on the immutable audit ledger.';
+    RAISE EXCEPTION 'Foody Loop SECURITY VIOLATION: TRUNCATE is strictly forbidden on the immutable audit ledger.';
 END;
 $$ LANGUAGE plpgsql;
 

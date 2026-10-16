@@ -1,15 +1,15 @@
-import { 
-  Shop, 
-  Ngo, 
-  Beneficiary, 
-  Volunteer, 
-  Donation, 
-  ItemIntelligenceRecord, 
-  RawMaterial, 
-  Recipe, 
-  DemandForecast, 
-  Sponsorship, 
-  AuditLog 
+import {
+  Shop,
+  Ngo,
+  Beneficiary,
+  Volunteer,
+  Donation,
+  ItemIntelligenceRecord,
+  RawMaterial,
+  Recipe,
+  DemandForecast,
+  Sponsorship,
+  AuditLog
 } from '../types';
 
 export const INITIAL_SHOPS: Shop[] = [
@@ -609,7 +609,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'LOG-1003',
     timestamp: '2026-10-16 09:32:05',
-    actor: 'Food Loop AI Matching Engine',
+    actor: 'Foody Loop AI Matching Engine',
     action: 'MATCH_PROPOSED',
     category: 'Donation',
     details: 'Geospatial match found: Radharani Ashram (2.1 km, 12 min travel time, required 100 meals).'

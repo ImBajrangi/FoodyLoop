@@ -7,7 +7,8 @@ import {
   HeartHandshake,
   Globe2,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck
 } from 'lucide-react';
 import { useAppState } from '../services/useAppState';
 
@@ -64,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text)', letterSpacing: '0.8px' }}>
-                FOOD LOOP
+                Foody Loop
               </span>
 
               {/* Portal Badge */}
@@ -72,6 +73,16 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 <span className="badge badge-emerald" style={{ fontSize: '0.72rem' }}>
                   <Store size={14} />
                   {isHindi ? 'दुकानदार डैशबोर्ड' : 'SHOP DASHBOARD'}
+                </span>
+              ) : state.portal === 'admin' ? (
+                <span className="badge" style={{
+                  fontSize: '0.72rem',
+                  backgroundColor: '#fef3c7',
+                  color: '#b45309',
+                  border: '1.5px solid #f59e0b'
+                }}>
+                  <ShieldCheck size={14} />
+                  {isHindi ? 'खाद्य सुरक्षा अधिकारी व एडमिन' : 'REGULATOR & ADMIN DESK'}
                 </span>
               ) : (
                 <span className="badge" style={{
@@ -111,7 +122,11 @@ export const Navbar: React.FC<NavbarProps> = () => {
 
             <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span>
-                {state.portal === 'shop' ? `${currentShop.name} (${currentShop.city})` : `${currentNgo.name} (${currentNgo.city})`}
+                {state.portal === 'shop' 
+                  ? `${currentShop?.name || 'Shop'} (${currentShop?.city || 'Vrindavan'})` 
+                  : state.portal === 'admin'
+                  ? (isHindi ? 'मथुरा जिला खाद्य सुरक्षा व विनियामक प्राधिकरण' : 'Mathura District Food Safety & Regulatory Authority')
+                  : `${currentNgo?.name || 'NGO'} (${currentNgo?.city || 'Vrindavan'})`}
               </span>
             </div>
           </div>
@@ -169,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = () => {
                 }}
               >
                 <HeartHandshake size={16} />
-                <span>{isHindi ? 'भंडारा दान (Sponsor)' : 'Sponsor Bhandara'}</span>
+                <span>{isHindi ? 'दान' : 'Sponsor'}</span>
               </button>
 
               <button

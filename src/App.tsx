@@ -70,6 +70,11 @@ export function App() {
                 {state.role === 'volunteer' && <DeliveryView />}
               </>
             )}
+
+            {/* PORTAL 3: ADMIN & REGULATORY DESK */}
+            {state.portal === 'admin' && (
+              <AdminControlRoom />
+            )}
           </>
         )}
       </main>
@@ -103,7 +108,7 @@ export function App() {
         }}>
           <div>
             <div style={{ fontWeight: 800, color: 'var(--color-text)' }}>
-              FOOD LOOP - Smart Food Redistribution Platform
+              Foody Loop - Smart Food Redistribution Platform
             </div>
             <div style={{ fontSize: '0.74rem' }}>
               Regional Pilot • In alignment with FSSAI IFSA guidelines

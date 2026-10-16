@@ -27,7 +27,7 @@ FoodyLoop connects local bhojanalayas, sweet shops, dhabas, ashrams, NGOs, and v
    - **Shopkeeper**: Declare surplus, view sales vs. prep analytics, and track shop reputation.
    - **NGO / Ashram**: Claim matching surplus donations with atomic concurrency protection.
    - **Volunteer Courier**: 4-digit pickup and delivery OTP verification with route optimization.
-   - **Devotee / Donor**: Sponsor fresh meals and bhandaras with instant digital certificates.
+   - **Devotee / Donor**: Sponsor fresh meals with instant digital certificates.
    - **Admin / Food Safety Officer**: View regulatory register, inspect immutable audit logs, and test concurrency locks.
 
 ---

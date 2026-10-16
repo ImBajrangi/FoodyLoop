@@ -30,7 +30,7 @@ import {
 import { evaluateFoodSafety } from './foodSafetyEngine';
 import { dbSync } from './dbSync';
 
-export type PortalType = 'shop' | 'ngo_donor' | null;
+export type PortalType = 'shop' | 'ngo_donor' | 'admin' | null;
 
 export interface AppCacheState {
   version: number;
@@ -280,9 +280,127 @@ class CacheService {
     } else if (portal === 'ngo_donor') {
       this.state.role = 'ngo';
       if (activeEntityId) this.state.activeNgoId = activeEntityId;
+    } else if (portal === 'admin') {
+      this.state.role = 'admin';
     }
     dbSync.syncAuthForRole(this.state.role);
     this.notify();
+  }
+
+  public registerShop(newShop: Shop, capacity = 100) {
+    this.state.shops = [newShop, ...this.state.shops];
+    this.addAuditLog({
+      id: 'LOG-' + Date.now(),
+      timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      actor: newShop.contactPerson,
+      action: 'ORGANIZATION_REGISTERED',
+      category: 'Verification',
+      details: `New restaurant applied: ${newShop.name} (${newShop.city}). FSSAI: ${newShop.fssaiNumber}. Status: Under Review.`
+    });
+    this.notify();
+
+    dbSync.registerOrganization({
+      name: newShop.name,
+      role: 'shop',
+      category: newShop.category,
+      city: newShop.city,
+      address: newShop.address,
+      fssaiLicenseNumber: newShop.fssaiNumber,
+      contactPerson: newShop.contactPerson,
+      contactPhone: newShop.phone,
+      capacityMealsPerDay: capacity
+    }).then(res => {
+      if (res.success && res.orgId) {
+        newShop.id = res.orgId;
+        this.save(this.state);
+        this.notifyLocal();
+      }
+    });
+  }
+
+  public registerNgo(newNgo: Ngo, licenseNumber: string) {
+    this.state.ngos = [newNgo, ...this.state.ngos];
+    this.addAuditLog({
+      id: 'LOG-' + Date.now(),
+      timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      actor: newNgo.contactPerson,
+      action: 'ORGANIZATION_REGISTERED',
+      category: 'Verification',
+      details: `New NGO applied: ${newNgo.name} (${newNgo.city}). Reg ID: ${licenseNumber}. Status: Under Review.`
+    });
+    this.notify();
+
+    dbSync.registerOrganization({
+      name: newNgo.name,
+      role: 'ngo',
+      category: newNgo.category,
+      city: newNgo.city,
+      address: newNgo.address,
+      fssaiLicenseNumber: licenseNumber,
+      contactPerson: newNgo.contactPerson,
+      contactPhone: newNgo.phone,
+      capacityMealsPerDay: newNgo.capacity
+    }).then(res => {
+      if (res.success && res.orgId) {
+        newNgo.id = res.orgId;
+        this.save(this.state);
+        this.notifyLocal();
+      }
+    });
+  }
+
+  public approveOrganization(orgId: string) {
+    let orgName = '';
+    const shop = this.state.shops.find(s => s.id === orgId);
+    if (shop) {
+      shop.verified = true;
+      shop.reputationTier = 'Active Partner';
+      shop.reputationScore = 95;
+      orgName = shop.name;
+    }
+
+    const ngo = this.state.ngos.find(n => n.id === orgId);
+    if (ngo) {
+      ngo.verified = true;
+      orgName = ngo.name;
+    }
+
+    this.addAuditLog({
+      id: 'LOG-' + Date.now(),
+      timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      actor: 'Food Safety Officer Mathura',
+      action: 'ORGANIZATION_APPROVED',
+      category: 'Verification',
+      details: `Authorized and verified: ${orgName || orgId}. Organization is now active.`
+    });
+
+    this.notify();
+    dbSync.approveOrganization(orgId);
+  }
+
+  public rejectOrganization(orgId: string, reason?: string) {
+    const shop = this.state.shops.find(s => s.id === orgId);
+    if (shop) {
+      shop.verified = false;
+      shop.reputationTier = 'Restricted';
+    }
+
+    const ngo = this.state.ngos.find(n => n.id === orgId);
+    if (ngo) {
+      ngo.verified = false;
+    }
+
+    this.addAuditLog({
+      id: 'LOG-' + Date.now(),
+      timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      actor: 'Food Safety Officer Mathura',
+      action: 'ORGANIZATION_RESTRICTED',
+      category: 'Verification',
+      details: `Registration flagged: ${reason || 'Physical inspection required'}.`
+    });
+
+    this.notify();
+    dbSync.rejectOrganization(orgId, reason);
   }
 
   public logout() {

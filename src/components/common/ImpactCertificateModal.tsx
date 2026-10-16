@@ -62,7 +62,7 @@ export const ImpactCertificateModal: React.FC<ImpactCertificateModalProps> = ({ 
             fontWeight: 800,
             marginBottom: '4px'
           }}>
-            Food Loop • Braj Seva Initiative
+            Foody Loop • Braj Seva Initiative
           </div>
 
           <h2 className="font-serif" style={{
@@ -167,7 +167,7 @@ export const ImpactCertificateModal: React.FC<ImpactCertificateModalProps> = ({ 
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: 700, color: '#1e293b' }}>Food Loop Operations</div>
+              <div style={{ fontWeight: 700, color: '#1e293b' }}>Foody Loop Operations</div>
               <div>Mathura District Hub</div>
             </div>
           </div>

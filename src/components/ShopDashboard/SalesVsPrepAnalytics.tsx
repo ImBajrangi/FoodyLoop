@@ -28,7 +28,7 @@ export const SalesVsPrepAnalytics: React.FC<SalesVsPrepAnalyticsProps> = ({ onOp
   const totalPrepared = state.itemIntelligence.reduce((acc, item) => acc + item.avgDailyPrepared, 0);
   const totalSold = state.itemIntelligence.reduce((acc, item) => acc + item.avgDailySold, 0);
   const totalSurplus = state.itemIntelligence.reduce((acc, item) => acc + item.avgDailySurplus, 0);
-  const totalDonated = Math.round(totalSurplus * 0.88); // 88% rescued through Food Loop!
+  const totalDonated = Math.round(totalSurplus * 0.88); // 88% rescued through Foody Loop!
   const totalDiscarded = totalSurplus - totalDonated; // Only 12% unavoidable discard
 
   // Interactive Seva & Savings Simulator state

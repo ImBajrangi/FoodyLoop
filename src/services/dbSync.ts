@@ -422,6 +422,119 @@ class DatabaseSyncService {
   }
 
   /**
+   * Register a new Restaurant / Shop or NGO in Supabase organizations
+   */
+  public async registerOrganization(payload: {
+    name: string;
+    role: 'shop' | 'ngo';
+    category: string;
+    city: 'Mathura' | 'Vrindavan' | 'Barsana';
+    address: string;
+    fssaiLicenseNumber: string;
+    contactPerson: string;
+    contactPhone: string;
+    capacityMealsPerDay: number;
+  }): Promise<{ success: boolean; orgId?: string; error?: string }> {
+    if (!isSupabaseConfigured) return { success: true, orgId: 'org-' + Date.now() };
+
+    try {
+      const sanitizedLicense = payload.fssaiLicenseNumber.replace(/[^a-zA-Z0-9]/g, '').slice(0, 14);
+
+      const dbPayload = {
+        name: payload.name,
+        role: payload.role,
+        category: payload.category,
+        city: payload.city,
+        address: payload.address,
+        fssai_license_number: sanitizedLicense,
+        is_verified: false,
+        reputation_score: 80,
+        reputation_tier: 'Under Review',
+        contact_person: payload.contactPerson,
+        contact_phone: payload.contactPhone,
+        capacity_meals_per_day: payload.capacityMealsPerDay
+      };
+
+      const { data, error } = await supabaseAdmin.from('organizations').insert(dbPayload).select().single();
+      if (error) throw error;
+
+      await this.pushAuditLog(
+        'organizations',
+        data.id,
+        payload.contactPerson,
+        'ORGANIZATION_REGISTERED',
+        'Verification',
+        `New ${payload.role === 'shop' ? 'Restaurant / Shop' : 'NGO'} applied for registration: ${payload.name} (${payload.city}). License/Ref: ${sanitizedLicense}.`
+      );
+
+      return { success: true, orgId: data.id };
+    } catch (err: any) {
+      console.warn('Register org error:', err?.message);
+      return { success: false, error: err?.message };
+    }
+  }
+
+  /**
+   * Approve Organization by Food Safety Officer / Admin
+   */
+  public async approveOrganization(orgId: string): Promise<{ success: boolean; error?: string }> {
+    if (!isSupabaseConfigured) return { success: true };
+
+    try {
+      const { data, error } = await supabaseAdmin.from('organizations').update({
+        is_verified: true,
+        reputation_tier: 'Active Partner',
+        reputation_score: 95
+      }).eq('id', orgId).select();
+
+      if (error) throw error;
+
+      await this.pushAuditLog(
+        'organizations',
+        orgId,
+        'Food Safety Officer Mathura',
+        'ORGANIZATION_APPROVED',
+        'Verification',
+        `Authorized and approved organization ${data?.[0]?.name || orgId} for Food Loop operations.`
+      );
+
+      return { success: true };
+    } catch (err: any) {
+      console.warn('Approve org warning:', err?.message);
+      return { success: false, error: err?.message };
+    }
+  }
+
+  /**
+   * Reject or Flag Organization for Physical Inspection
+   */
+  public async rejectOrganization(orgId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+    if (!isSupabaseConfigured) return { success: true };
+
+    try {
+      const { error } = await supabaseAdmin.from('organizations').update({
+        is_verified: false,
+        reputation_tier: 'Restricted'
+      }).eq('id', orgId);
+
+      if (error) throw error;
+
+      await this.pushAuditLog(
+        'organizations',
+        orgId,
+        'Food Safety Officer Mathura',
+        'ORGANIZATION_RESTRICTED',
+        'Verification',
+        `Flagged for regulatory inspection: ${reason || 'Physical verification pending'}.`
+      );
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  }
+
+  /**
    * Listen to real-time changes on public:donations and trigger local update
    */
   public subscribeToRealtime(onDonationChange: () => void): () => void {

@@ -9,12 +9,14 @@ import {
   Phone,
   UtensilsCrossed,
   Sparkles,
-  MapPin
+  MapPin,
+  Building2
 } from 'lucide-react';
 import { useAppState } from '../../services/useAppState';
+import { RegisterOrganizationModal } from './RegisterOrganizationModal';
 
 interface LoginPortalProps {
-  onSelectPortal: (portal: 'shop' | 'ngo_donor', entityId?: string) => void;
+  onSelectPortal: (portal: 'shop' | 'ngo_donor' | 'admin', entityId?: string) => void;
 }
 
 export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
@@ -22,12 +24,15 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
   const [selectedShopId, setSelectedShopId] = useState(state.shops[0]?.id || 'shop-1');
   const [selectedNgoId, setSelectedNgoId] = useState(state.ngos[0]?.id || 'ngo-1');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
   const isHindi = state.language === 'hi';
 
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (phoneNumber.includes('1') || phoneNumber.toLowerCase().includes('shop')) {
+    if (phoneNumber.includes('4') || phoneNumber.toLowerCase().includes('admin')) {
+      onSelectPortal('admin');
+    } else if (phoneNumber.includes('1') || phoneNumber.toLowerCase().includes('shop')) {
       onSelectPortal('shop', selectedShopId);
     } else {
       onSelectPortal('ngo_donor', selectedNgoId);
@@ -72,7 +77,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
           </div>
           <div>
             <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-text)', letterSpacing: '0.8px', lineHeight: 1.1 }}>
-              FOOD LOOP
+              Foody Loop
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
               Mathura - Vrindavan - Barsana Pilot
@@ -80,14 +85,32 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
           </div>
         </div>
 
-        <button
-          onClick={() => cache.setLanguage(isHindi ? 'en' : 'hi')}
-          className="btn btn-secondary"
-          style={{ minHeight: '38px', padding: '0 14px', fontSize: '0.82rem' }}
-        >
-          <Globe2 size={15} />
-          <span>{isHindi ? 'English' : 'हिन्दी'}</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => setIsRegisterOpen(true)}
+            className="btn btn-primary"
+            style={{
+              minHeight: '38px',
+              padding: '0 14px',
+              fontSize: '0.82rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <Building2 size={16} />
+            <span>{isHindi ? 'नया पंजीकरण (Register)' : 'New Registration'}</span>
+          </button>
+
+          <button
+            onClick={() => cache.setLanguage(isHindi ? 'en' : 'hi')}
+            className="btn btn-secondary"
+            style={{ minHeight: '38px', padding: '0 14px', fontSize: '0.82rem' }}
+          >
+            <Globe2 size={15} />
+            <span>{isHindi ? 'English' : 'हिन्दी'}</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Focused Body - Constrained Width (920px max) */}
@@ -278,7 +301,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
               <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: '16px', lineHeight: 1.4 }}>
                 {isHindi
                   ? 'आश्रमों हेतु तुरंत भोजन का दावा करें या जन्मदिन/पुण्यतिथि पर भंडारा प्रायोजित करें।'
-                  : 'Claim hot surplus meals for elderly ashrams or sponsor commemorative bhandaras.'}
+                  : 'Claim hot surplus meals for elderly ashrams or sponsor commemorative.'}
               </p>
 
               {/* Feature Checklist */}
@@ -302,7 +325,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text)' }}>
                   <CheckCircle2 size={16} color="#1cb0f6" />
-                  <span>{isHindi ? 'जन्मदिन/पुण्यतिथि भंडारा दान' : 'Sponsor Bhandaras with certificate'}</span>
+                  <span>{isHindi ? 'जन्मदिन/पुण्यतिथि दान' : 'Sponsor with certificate'}</span>
                 </div>
               </div>
 
@@ -397,12 +420,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
           </form>
 
           {/* 1-Tap Demo Shortcuts */}
-          <div style={{ display: 'flex', gap: '12px', fontSize: '0.74rem' }}>
+          <div style={{ display: 'flex', gap: '12px', fontSize: '0.74rem', flexWrap: 'wrap' }}>
             <button
-              onClick={() => { 
-                setPhoneNumber('+91 98971 10001'); 
+              onClick={() => {
+                setPhoneNumber('+91 98971 10001');
                 const targetId = state.shops.find(s => s.name.includes('Krishna Bhojanalaya'))?.id || state.shops[0]?.id || 'shop-1';
-                onSelectPortal('shop', targetId); 
+                onSelectPortal('shop', targetId);
               }}
               style={{
                 background: 'none',
@@ -417,10 +440,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
               • {isHindi ? 'दुकानदार डेमो (+91 98971 10001)' : 'Shop Demo (+91 98971 10001)'}
             </button>
             <button
-              onClick={() => { 
-                setPhoneNumber('+91 98971 20002'); 
+              onClick={() => {
+                setPhoneNumber('+91 98971 20002');
                 const targetId = state.ngos.find(n => n.name.includes('Braj Seva'))?.id || state.ngos[0]?.id || 'ngo-1';
-                onSelectPortal('ngo_donor', targetId); 
+                onSelectPortal('ngo_donor', targetId);
               }}
               style={{
                 background: 'none',
@@ -433,6 +456,23 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
               }}
             >
               • {isHindi ? 'एनजीओ डेमो (+91 98971 20002)' : 'NGO Demo (+91 98971 20002)'}
+            </button>
+            <button
+              onClick={() => {
+                setPhoneNumber('+91 98971 40004');
+                onSelectPortal('admin');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#6366f1',
+                cursor: 'pointer',
+                fontWeight: 700,
+                textDecoration: 'underline',
+                padding: 0
+              }}
+            >
+              • {isHindi ? 'खाद्य सुरक्षा अधिकारी / एडमिन (+91 98971 40004)' : 'Admin / Food Officer (+91 98971 40004)'}
             </button>
           </div>
         </div>
@@ -449,8 +489,13 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
         paddingTop: '6px',
         paddingBottom: '8px'
       }}>
-        FOOD LOOP • Smart Food Recovery &amp; Distribution Platform • Mathura - Vrindavan - Barsana Regional Pilot • FSSAI IFSA Certified
+        Foody Loop • Smart Food Recovery &amp; Distribution Platform • Mathura - Vrindavan - Barsana Regional Pilot • FSSAI IFSA Certified
       </footer>
+
+      <RegisterOrganizationModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+      />
     </div>
   );
 };

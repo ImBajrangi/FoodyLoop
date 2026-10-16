@@ -1,6 +1,6 @@
 export const TRANSLATIONS = {
   en: {
-    appName: 'FOOD LOOP',
+    appName: 'Foody Loop',
     tagline: 'AI-Powered Food Intelligence, Donation & Redistribution',
     pilotBadge: 'PILOT: Mathura - Vrindavan - Barsana',
     role_shop: 'Shopkeeper / Restaurant',
@@ -14,7 +14,7 @@ export const TRANSLATIONS = {
     reputationScore: 'Reputation Score',
     quickDonate: '+ Donate Food',
     markOutOfStock: 'Mark Out of Stock',
-    aiInsightTitle: 'Food Loop AI Intelligence',
+    aiInsightTitle: 'Foody Loop AI Intelligence',
     salesVsPrep: 'Sales vs Preparation Intelligence',
     itemBreakdown: 'Item-Level Performance',
     rawMaterials: 'Raw Material Inventory & Recipes',
@@ -34,7 +34,7 @@ export const TRANSLATIONS = {
     verifiedPartner: 'Verified Partner'
   },
   hi: {
-    appName: 'फ़ूड लूप (FOOD LOOP)',
+    appName: 'फ़ूड लूप (Foody Loop)',
     tagline: 'एआई-संचालित खाद्य बुद्धिमत्ता एवं भोजन वितरण मंच',
     pilotBadge: 'पायलट क्षेत्र: मथुरा - वृन्दावन - बरसाना',
     role_shop: 'दुकानदार / भोजनालय',

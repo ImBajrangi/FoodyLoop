@@ -95,29 +95,6 @@ export const Navbar: React.FC<NavbarProps> = () => {
                   {isHindi ? 'एनजीओ / अन्नदाता ऐप' : 'DONOR / NGO APP'}
                 </span>
               )}
-
-              {/* Live Database Sync Indicator */}
-              <span className="badge" style={{
-                fontSize: '0.68rem',
-                backgroundColor: '#f0fdf4',
-                color: '#15803d',
-                border: '1.5px solid #86efac',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '2px 8px'
-              }} title="Supabase PostgreSQL Live Synchronized">
-                <span style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: state.isSyncing ? '#f59e0b' : '#22c55e',
-                  display: 'inline-block'
-                }} />
-                {state.isSyncing 
-                  ? (isHindi ? 'डेटाबेस सिंक...' : 'Syncing...') 
-                  : (isHindi ? 'लाइव डेटाबेस' : 'Live DB Synced')}
-              </span>
             </div>
 
             <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>

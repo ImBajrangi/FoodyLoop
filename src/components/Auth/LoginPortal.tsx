@@ -411,6 +411,8 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                         placeholder={
                           signinRole === 'shop'
                             ? '98371 45290'
+                            : signinRole === 'rider'
+                            ? '98765 43210'
                             : '98200 44102'
                         }
                         value={signinPhone}
@@ -428,16 +430,31 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                       />
                     </div>
 
-                    {/* Dropdown to select from registered establishments */}
+                    {/* Quick Establishment / Rider Selection */}
                     <div style={{ marginTop: '8px' }}>
                       <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '4px' }}>
                         {signinRole === 'shop'
                           ? (isHindi ? 'या पंजीकृत दुकान चुनें (त्वरित चयन):' : 'Or quick select registered shop:')
-                          : (isHindi ? 'या पंजीकृत संस्था/आश्रम चुनें (त्वरित चयन):' : 'Or quick select registered NGO/Ashram:')}
+                          : signinRole === 'ngo'
+                          ? (isHindi ? 'या पंजीकृत संस्था/आश्रम चुनें (त्वरित चयन):' : 'Or quick select registered NGO/Ashram:')
+                          : (isHindi ? 'या पंजीकृत डिलीवरी सेवादार चुनें (त्वरित चयन):' : 'Or quick select registered delivery partner:')}
                       </div>
+
+                      {/* Clean Dropdown */}
                       <select
-                        className="form-input"
-                        style={{ height: '38px', fontSize: '0.8rem', backgroundColor: '#f8fafc', fontWeight: 600, cursor: 'pointer' }}
+                        className="form-select"
+                        style={{
+                          width: '100%',
+                          minHeight: '40px',
+                          borderRadius: '12px',
+                          border: '2px solid #e2e8f0',
+                          backgroundColor: '#f8fafc',
+                          fontSize: '0.84rem',
+                          fontWeight: 600,
+                          color: '#1e293b',
+                          cursor: 'pointer',
+                          padding: '8px 12px'
+                        }}
                         value=""
                         onChange={e => {
                           if (e.target.value) {
@@ -451,7 +468,9 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                         <option value="">
                           {signinRole === 'shop'
                             ? (isHindi ? '-- सूची से पंजीकृत दुकान चुनें --' : '-- Choose Registered Shop to Auto-fill --')
-                            : (isHindi ? '-- सूची से पंजीकृत आश्रम चुनें --' : '-- Choose Registered NGO to Auto-fill --')}
+                            : signinRole === 'ngo'
+                            ? (isHindi ? '-- सूची से पंजीकृत आश्रम चुनें --' : '-- Choose Registered NGO to Auto-fill --')
+                            : (isHindi ? '-- सूची से डिलीवरी सेवादार चुनें --' : '-- Choose Registered Courier to Auto-fill --')}
                         </option>
                         {signinRole === 'shop' && state.shops.map(s => {
                           const raw = s.phone.replace(/\D/g, '').slice(-10);
@@ -469,47 +488,50 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                             </option>
                           );
                         })}
+                        {signinRole === 'rider' && [
+                          { id: 'vol-arun', name: 'Arun Sharma (अरुण शर्मा)', phone: '9876543210', city: 'Vrindavan' },
+                          { id: 'vol-gopal', name: 'Gopal Das (गोपाल दास)', phone: '9897122340', city: 'Govardhan' },
+                          { id: 'vol-vishnu', name: 'Vishnu Sharma (विष्णु शर्मा)', phone: '9837011223', city: 'Mathura' }
+                        ].map(r => (
+                          <option key={r.id} value={r.phone}>
+                            🚴 {r.name} ({r.city}) - +91 {r.phone}
+                          </option>
+                        ))}
                       </select>
 
-                      {/* Clickable Permitted Organizations List for Direct Access */}
+                      {/* Clickable Quick Access Chips */}
                       <div style={{ marginTop: '10px' }}>
                         <div style={{
                           fontSize: '0.74rem',
-                          color: '#15803d',
+                          color: signinRole === 'shop' ? '#15803d' : signinRole === 'ngo' ? '#1e40af' : '#b45309',
                           fontWeight: 800,
                           marginBottom: '6px',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '5px'
                         }}>
-                          <CheckCircle2 size={13} color="#16a34a" />
+                          {signinRole === 'rider' ? <Bike size={14} color="#d97706" /> : <CheckCircle2 size={13} color={signinRole === 'shop' ? '#16a34a' : '#2563eb'} />}
                           <span>
                             {signinRole === 'shop'
                               ? (isHindi ? 'सत्यापित दुकानें (सीधे एक्सेस करें):' : 'Permitted Shops (Click to Access):')
-                              : (isHindi ? 'सत्यापित आश्रम/संस्थाएं (सीधे एक्सेस करें):' : 'Permitted NGOs (Click to Access):')}
+                              : signinRole === 'ngo'
+                              ? (isHindi ? 'सत्यापित आश्रम/संस्थाएं (सीधे एक्सेस करें):' : 'Permitted NGOs (Click to Access):')
+                              : (isHindi ? 'सक्रिय डिलीवरी सेवादार (सीधे एक्सेस करें):' : 'Active Delivery Couriers (Click to Access):')}
                           </span>
                         </div>
+
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                          {(signinRole === 'shop'
-                            ? state.shops.filter(s => s.verified)
-                            : state.ngos.filter(n => n.verified)
-                          ).map(item => (
+                          {signinRole === 'shop' && state.shops.filter(s => s.verified).map(item => (
                             <button
                               key={item.id}
                               type="button"
-                              onClick={() => {
-                                if (signinRole === 'shop') {
-                                  onSelectPortal('shop', item.id, 'shop');
-                                } else {
-                                  onSelectPortal('ngo_donor', item.id, 'ngo');
-                                }
-                              }}
+                              onClick={() => onSelectPortal('shop', item.id, 'shop')}
                               style={{
                                 padding: '5px 11px',
                                 borderRadius: '18px',
-                                border: signinRole === 'shop' ? '1.5px solid #86efac' : '1.5px solid #93c5fd',
-                                backgroundColor: signinRole === 'shop' ? '#f0fdf4' : '#eff6ff',
-                                color: signinRole === 'shop' ? '#166534' : '#1e40af',
+                                border: '1.5px solid #86efac',
+                                backgroundColor: '#f0fdf4',
+                                color: '#166534',
                                 fontSize: '0.75rem',
                                 fontWeight: 700,
                                 cursor: 'pointer',
@@ -519,7 +541,63 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                               }}
                               title={isHindi ? `${item.name} में सीधे प्रवेश करें` : `Enter ${item.name} directly`}
                             >
-                              <CheckCircle2 size={12} color={signinRole === 'shop' ? '#16a34a' : '#2563eb'} />
+                              <CheckCircle2 size={12} color="#16a34a" />
+                              <span>{item.name}</span>
+                              <span style={{ fontSize: '0.67rem', opacity: 0.75 }}>({item.city})</span>
+                            </button>
+                          ))}
+
+                          {signinRole === 'ngo' && state.ngos.filter(n => n.verified).map(item => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => onSelectPortal('ngo_donor', item.id, 'ngo')}
+                              style={{
+                                padding: '5px 11px',
+                                borderRadius: '18px',
+                                border: '1.5px solid #93c5fd',
+                                backgroundColor: '#eff6ff',
+                                color: '#1e40af',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                              title={isHindi ? `${item.name} में सीधे प्रवेश करें` : `Enter ${item.name} directly`}
+                            >
+                              <CheckCircle2 size={12} color="#2563eb" />
+                              <span>{item.name}</span>
+                              <span style={{ fontSize: '0.67rem', opacity: 0.75 }}>({item.city})</span>
+                            </button>
+                          ))}
+
+                          {signinRole === 'rider' && [
+                            { id: 'vol-arun', name: 'Arun Sharma (अरुण)', city: 'Vrindavan' },
+                            { id: 'vol-gopal', name: 'Gopal Das (गोपाल)', city: 'Govardhan' },
+                            { id: 'vol-vishnu', name: 'Vishnu Dev (विष्णु)', city: 'Mathura' }
+                          ].map(item => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => onSelectPortal('ngo_donor', item.id, 'volunteer')}
+                              style={{
+                                padding: '5px 11px',
+                                borderRadius: '18px',
+                                border: '1.5px solid #fde68a',
+                                backgroundColor: '#fffbeb',
+                                color: '#92400e',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                              title={isHindi ? `${item.name} सेवादार पोर्टल में सीधे प्रवेश करें` : `Enter ${item.name} courier dashboard directly`}
+                            >
+                              <Bike size={13} color="#d97706" />
                               <span>{item.name}</span>
                               <span style={{ fontSize: '0.67rem', opacity: 0.75 }}>({item.city})</span>
                             </button>

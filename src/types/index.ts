@@ -163,6 +163,8 @@ export interface Donation {
   riderStatus?: 'HEADING_TO_SHOP' | 'AT_SHOP_PICKUP' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
   riderEtaMinutes?: number;
   riderPhone?: string;
+  routeWaypoints?: [number, number][];
+  currentWaypointIdx?: number;
 }
 
 

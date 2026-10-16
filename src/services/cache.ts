@@ -899,6 +899,15 @@ class CacheService {
     this.notify();
   }
 
+  public setDonationRouteWaypoints(donationId: string, waypoints: [number, number][]) {
+    const donation = this.state.donations.find(d => d.id === donationId);
+    if (!donation || !waypoints || waypoints.length === 0) return;
+    if (!donation.routeWaypoints || donation.routeWaypoints.length === 0) {
+      donation.routeWaypoints = waypoints;
+      donation.currentWaypointIdx = 0;
+    }
+  }
+
   // --- Real-time Courier / Rider GPS Step Simulation ---
   public simulateRiderStep(donationId: string) {
     const donation = this.state.donations.find(d => d.id === donationId);
@@ -914,16 +923,34 @@ class CacheService {
     const destLng = ben?.lng || ngo?.lng || (shopLng + 0.014);
 
     if (donation.riderStatus === 'HEADING_TO_SHOP') {
-      const distToShop = Math.hypot(donation.riderLat - shopLat, donation.riderLng - shopLng);
-      if (distToShop < 0.0015) {
-        donation.riderLat = shopLat;
-        donation.riderLng = shopLng;
-        donation.riderStatus = 'AT_SHOP_PICKUP';
-        donation.riderEtaMinutes = 2;
+      if (donation.routeWaypoints && donation.routeWaypoints.length > 0) {
+        const stepAdvance = Math.max(2, Math.floor(donation.routeWaypoints.length / 5));
+        const nextIdx = (donation.currentWaypointIdx || 0) + stepAdvance;
+        if (nextIdx >= donation.routeWaypoints.length - 1) {
+          donation.riderLat = shopLat;
+          donation.riderLng = shopLng;
+          donation.riderStatus = 'AT_SHOP_PICKUP';
+          donation.riderEtaMinutes = 2;
+          donation.routeWaypoints = undefined;
+          donation.currentWaypointIdx = 0;
+        } else {
+          donation.currentWaypointIdx = nextIdx;
+          donation.riderLat = donation.routeWaypoints[nextIdx][0];
+          donation.riderLng = donation.routeWaypoints[nextIdx][1];
+          donation.riderEtaMinutes = Math.max(1, Math.round(((donation.routeWaypoints.length - nextIdx) / donation.routeWaypoints.length) * 8));
+        }
       } else {
-        donation.riderLat = Number((donation.riderLat + (shopLat - donation.riderLat) * 0.38).toFixed(5));
-        donation.riderLng = Number((donation.riderLng + (shopLng - donation.riderLng) * 0.38).toFixed(5));
-        donation.riderEtaMinutes = Math.max(1, (donation.riderEtaMinutes || 7) - 2);
+        const distToShop = Math.hypot(donation.riderLat - shopLat, donation.riderLng - shopLng);
+        if (distToShop < 0.0015) {
+          donation.riderLat = shopLat;
+          donation.riderLng = shopLng;
+          donation.riderStatus = 'AT_SHOP_PICKUP';
+          donation.riderEtaMinutes = 2;
+        } else {
+          donation.riderLat = Number((donation.riderLat + (shopLat - donation.riderLat) * 0.38).toFixed(5));
+          donation.riderLng = Number((donation.riderLng + (shopLng - donation.riderLng) * 0.38).toFixed(5));
+          donation.riderEtaMinutes = Math.max(1, (donation.riderEtaMinutes || 7) - 2);
+        }
       }
     } else if (donation.riderStatus === 'AT_SHOP_PICKUP') {
       donation.riderStatus = 'OUT_FOR_DELIVERY';
@@ -931,18 +958,39 @@ class CacheService {
       donation.riderEtaMinutes = 11;
       donation.riderLat = Number((shopLat + 0.003).toFixed(5));
       donation.riderLng = Number((shopLng + 0.002).toFixed(5));
+      donation.routeWaypoints = undefined;
+      donation.currentWaypointIdx = 0;
     } else if (donation.riderStatus === 'OUT_FOR_DELIVERY') {
-      const distToDest = Math.hypot(donation.riderLat - destLat, donation.riderLng - destLng);
-      if (distToDest < 0.0015) {
-        donation.riderLat = destLat;
-        donation.riderLng = destLng;
-        donation.riderStatus = 'DELIVERED';
-        donation.status = 'DELIVERED';
-        donation.riderEtaMinutes = 0;
+      if (donation.routeWaypoints && donation.routeWaypoints.length > 0) {
+        const stepAdvance = Math.max(2, Math.floor(donation.routeWaypoints.length / 6));
+        const nextIdx = (donation.currentWaypointIdx || 0) + stepAdvance;
+        if (nextIdx >= donation.routeWaypoints.length - 1) {
+          donation.riderLat = destLat;
+          donation.riderLng = destLng;
+          donation.riderStatus = 'DELIVERED';
+          donation.status = 'DELIVERED';
+          donation.riderEtaMinutes = 0;
+          donation.routeWaypoints = undefined;
+          donation.currentWaypointIdx = 0;
+        } else {
+          donation.currentWaypointIdx = nextIdx;
+          donation.riderLat = donation.routeWaypoints[nextIdx][0];
+          donation.riderLng = donation.routeWaypoints[nextIdx][1];
+          donation.riderEtaMinutes = Math.max(1, Math.round(((donation.routeWaypoints.length - nextIdx) / donation.routeWaypoints.length) * 12));
+        }
       } else {
-        donation.riderLat = Number((donation.riderLat + (destLat - donation.riderLat) * 0.35).toFixed(5));
-        donation.riderLng = Number((donation.riderLng + (destLng - donation.riderLng) * 0.35).toFixed(5));
-        donation.riderEtaMinutes = Math.max(1, (donation.riderEtaMinutes || 10) - 2);
+        const distToDest = Math.hypot(donation.riderLat - destLat, donation.riderLng - destLng);
+        if (distToDest < 0.0015) {
+          donation.riderLat = destLat;
+          donation.riderLng = destLng;
+          donation.riderStatus = 'DELIVERED';
+          donation.status = 'DELIVERED';
+          donation.riderEtaMinutes = 0;
+        } else {
+          donation.riderLat = Number((donation.riderLat + (destLat - donation.riderLat) * 0.35).toFixed(5));
+          donation.riderLng = Number((donation.riderLng + (destLng - donation.riderLng) * 0.35).toFixed(5));
+          donation.riderEtaMinutes = Math.max(1, (donation.riderEtaMinutes || 10) - 2);
+        }
       }
     }
 

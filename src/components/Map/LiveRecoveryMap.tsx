@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useAppState } from '../../services/useAppState';
 import type { Donation, Shop, Ngo, Beneficiary } from '../../types';
+import { getRoadRoute } from '../../services/routingService';
+import { cache } from '../../services/cache';
 
 interface LiveRecoveryMapProps {
   activeDonationId?: string;
@@ -41,10 +43,15 @@ export const LiveRecoveryMap: React.FC<LiveRecoveryMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
-  const routeLayerRef = useRef<L.Polyline | null>(null);
+  const routeLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'shops' | 'ngos' | 'riders'>(defaultFilter);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [routeMeta, setRouteMeta] = useState<{
+    distanceText?: string;
+    durationText?: string;
+    isRealRoad?: boolean;
+  } | null>(null);
   const [selectedPinInfo, setSelectedPinInfo] = useState<{
     type: 'shop' | 'ngo' | 'rider';
     title: string;
@@ -106,8 +113,10 @@ export const LiveRecoveryMap: React.FC<LiveRecoveryMapProps> = ({
       attribution: '&copy; CARTO &copy; OpenStreetMap'
     }).addTo(map);
 
+    const routeLayerGroup = L.layerGroup().addTo(map);
     const layerGroup = L.layerGroup().addTo(map);
     layerGroupRef.current = layerGroup;
+    routeLayerGroupRef.current = routeLayerGroup;
     mapInstanceRef.current = map;
 
     // Invalidate size after layout stabilization
@@ -117,6 +126,14 @@ export const LiveRecoveryMap: React.FC<LiveRecoveryMapProps> = ({
 
     return () => {
       clearTimeout(timer);
+      if (routeLayerGroupRef.current) {
+        routeLayerGroupRef.current.clearLayers();
+        routeLayerGroupRef.current = null;
+      }
+      if (layerGroupRef.current) {
+        layerGroupRef.current.clearLayers();
+        layerGroupRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -131,10 +148,6 @@ export const LiveRecoveryMap: React.FC<LiveRecoveryMapProps> = ({
     if (!map || !layerGroup) return;
 
     layerGroup.clearLayers();
-    if (routeLayerRef.current) {
-      routeLayerRef.current.remove();
-      routeLayerRef.current = null;
-    }
 
     const bounds = L.latLngBounds([]);
 
@@ -319,32 +332,6 @@ export const LiveRecoveryMap: React.FC<LiveRecoveryMapProps> = ({
 
         layerGroup.addLayer(marker);
         bounds.extend([donation.riderLat, donation.riderLng]);
-
-        // Draw Polyline Route if tracking this donation
-        if (trackingDonation && trackingDonation.id === donation.id) {
-          const shop = state.shops.find((s: Shop) => s.id === donation.donorShopId);
-          const ben = state.beneficiaries.find((b: Beneficiary) => b.id === donation.targetBeneficiaryId);
-          const ngo = state.ngos.find((n: Ngo) => n.id === donation.matchedNgoId);
-
-          const shopCoords: [number, number] = [shop?.lat || 27.5706, shop?.lng || 77.6743];
-          const riderCoords: [number, number] = [donation.riderLat, donation.riderLng];
-          const destCoords: [number, number] = [ben?.lat || ngo?.lat || 27.5810, ben?.lng || ngo?.lng || 77.6850];
-
-          // Draw route line: rider -> shop -> ashram
-          const routePoints: [number, number][] = isHeadingToShop
-            ? [riderCoords, shopCoords]
-            : [shopCoords, riderCoords, destCoords];
-
-          const routePolyline = L.polyline(routePoints, {
-            color: '#10B981',
-            weight: 4,
-            opacity: 0.85,
-            dashArray: '8, 8',
-            lineJoin: 'round'
-          }).addTo(map);
-
-          routeLayerRef.current = routePolyline;
-        }
       });
     }
 
@@ -352,7 +339,134 @@ export const LiveRecoveryMap: React.FC<LiveRecoveryMapProps> = ({
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     }
-  }, [state.shops, state.ngos, state.donations, activeFilter, trackingDonation]);
+  }, [state.shops, state.ngos, state.donations, activeFilter]);
+
+  // Real-World Road Route Computation & Dynamic Street Navigation
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const routeGroup = routeLayerGroupRef.current;
+    if (!map || !routeGroup) return;
+
+    let isCancelled = false;
+
+    if (!trackingDonation) {
+      routeGroup.clearLayers();
+      setRouteMeta(null);
+      return;
+    }
+
+    const shop = state.shops.find((s: Shop) => s.id === trackingDonation.donorShopId);
+    const ben = state.beneficiaries.find((b: Beneficiary) => b.id === trackingDonation.targetBeneficiaryId);
+    const ngo = state.ngos.find((n: Ngo) => n.id === trackingDonation.matchedNgoId);
+
+    const shopCoords: [number, number] = [shop?.lat || 27.5706, shop?.lng || 77.6743];
+    const destCoords: [number, number] = [ben?.lat || ngo?.lat || 27.5810, ben?.lng || ngo?.lng || 77.6850];
+
+    const isHeadingToShop = trackingDonation.riderStatus === 'HEADING_TO_SHOP';
+    const isAtShop = trackingDonation.riderStatus === 'AT_SHOP_PICKUP';
+    const isOutForDelivery = trackingDonation.riderStatus === 'OUT_FOR_DELIVERY';
+
+    let startPoint: [number, number];
+    let endPoint: [number, number];
+
+    if (isHeadingToShop && trackingDonation.riderLat && trackingDonation.riderLng) {
+      startPoint = [trackingDonation.riderLat, trackingDonation.riderLng];
+      endPoint = shopCoords;
+    } else if (isAtShop) {
+      startPoint = shopCoords;
+      endPoint = destCoords;
+    } else if (isOutForDelivery && trackingDonation.riderLat && trackingDonation.riderLng) {
+      startPoint = [trackingDonation.riderLat, trackingDonation.riderLng];
+      endPoint = destCoords;
+    } else {
+      startPoint = shopCoords;
+      endPoint = destCoords;
+    }
+
+    getRoadRoute(startPoint[0], startPoint[1], endPoint[0], endPoint[1]).then(result => {
+      if (isCancelled || !routeLayerGroupRef.current) return;
+
+      routeGroup.clearLayers();
+
+      // Outer road contrast casing (dark forest green underlay matching Google Maps / Swiggy)
+      L.polyline(result.coordinates, {
+        color: '#064e3b',
+        weight: 6.5,
+        opacity: 0.7,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(routeGroup);
+
+      // Inner active road line (vibrant emerald dashed path following real streets)
+      L.polyline(result.coordinates, {
+        color: '#10b981',
+        weight: 3.5,
+        opacity: 0.95,
+        dashArray: '7, 9',
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(routeGroup);
+
+      // If courier is heading to shop, also render the upcoming leg from shop to ashram with subtle indigo dashed styling
+      if (isHeadingToShop) {
+        getRoadRoute(shopCoords[0], shopCoords[1], destCoords[0], destCoords[1]).then(leg2Result => {
+          if (isCancelled || !routeLayerGroupRef.current) return;
+          L.polyline(leg2Result.coordinates, {
+            color: '#6366f1',
+            weight: 2.5,
+            opacity: 0.45,
+            dashArray: '4, 8',
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(routeGroup);
+        });
+      }
+
+      // If out for delivery, show completed route trail from shop to rider
+      if (isOutForDelivery && trackingDonation.riderLat && trackingDonation.riderLng) {
+        getRoadRoute(shopCoords[0], shopCoords[1], trackingDonation.riderLat, trackingDonation.riderLng).then(completedResult => {
+          if (isCancelled || !routeLayerGroupRef.current) return;
+          L.polyline(completedResult.coordinates, {
+            color: '#059669',
+            weight: 3,
+            opacity: 0.45,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(routeGroup);
+        });
+      }
+
+      // Sync road waypoints to cache so rider simulation steps along the real street network
+      if (result.isRealRoad && result.coordinates.length > 2) {
+        cache.setDonationRouteWaypoints(trackingDonation.id, result.coordinates);
+      }
+
+      if (result.distanceMeters && result.durationSeconds) {
+        setRouteMeta({
+          distanceText: `${(result.distanceMeters / 1000).toFixed(1)} km`,
+          durationText: `${Math.max(1, Math.round(result.durationSeconds / 60))} min`,
+          isRealRoad: result.isRealRoad
+        });
+      } else {
+        setRouteMeta(null);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    trackingDonation?.id,
+    trackingDonation?.riderLat,
+    trackingDonation?.riderLng,
+    trackingDonation?.riderStatus,
+    trackingDonation?.donorShopId,
+    trackingDonation?.targetBeneficiaryId,
+    trackingDonation?.matchedNgoId,
+    state.shops,
+    state.ngos,
+    state.beneficiaries
+  ]);
 
   const handleRecenter = () => {
     if (mapInstanceRef.current) {
@@ -469,6 +583,30 @@ export const LiveRecoveryMap: React.FC<LiveRecoveryMapProps> = ({
             >
               🚴 Couriers
             </button>
+          </div>
+        )}
+
+        {/* Real-time Road Route Navigation Pill */}
+        {routeMeta && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '5px 12px',
+            backgroundColor: 'rgba(6, 78, 59, 0.92)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '14px',
+            border: '1.5px solid #10b981',
+            color: '#ffffff',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+            fontSize: '0.74rem',
+            fontWeight: 800,
+            pointerEvents: 'auto'
+          }}>
+            <span style={{ color: '#a7f3d0' }}>🛣️ GPS Road:</span>
+            <span>{routeMeta.distanceText}</span>
+            <span style={{ color: '#6ee7b7' }}>•</span>
+            <span style={{ color: '#fef08a' }}>{routeMeta.durationText}</span>
           </div>
         )}
 

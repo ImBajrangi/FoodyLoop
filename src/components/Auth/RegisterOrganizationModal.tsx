@@ -18,12 +18,14 @@ import { useAppState } from '../../services/useAppState';
 interface RegisterOrganizationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onRegisterSuccess?: (role: 'shop' | 'ngo', newOrgId: string) => void;
   onRegisteredSuccess?: (newOrgId: string) => void;
 }
 
 export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps> = ({
   isOpen,
   onClose,
+  onRegisterSuccess,
   onRegisteredSuccess
 }) => {
   const { state, cache } = useAppState();
@@ -34,7 +36,7 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
   // Form Fields
   const [orgName, setOrgName] = useState('');
   const [category, setCategory] = useState(activeTab === 'shop' ? 'Pure Veg Traditional Bhojanalaya' : 'Food Recovery & Ashram Feeding');
-  const [city, setCity] = useState<'Mathura' | 'Vrindavan' | 'Barsana'>('Vrindavan');
+  const [city, setCity] = useState('Vrindavan');
   const [address, setAddress] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [contactPerson, setContactPerson] = useState('');
@@ -43,6 +45,7 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
 
   // Success State
   const [submittedRefId, setSubmittedRefId] = useState<string | null>(null);
+  const [registeredOrgId, setRegisteredOrgId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -54,19 +57,25 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
     setIsSubmitting(true);
 
     // Format license number up to 14 characters to conform to FSSAI VARCHAR(14)
-    const sanitizedLicense = licenseNumber.trim().replace(/[^a-zA-Z0-9]/g, '').slice(0, 14) || 
+    const sanitizedLicense = licenseNumber.trim().replace(/[^a-zA-Z0-9]/g, '').slice(0, 14) ||
       (activeTab === 'shop' ? '12724' + Math.floor(100000000 + Math.random() * 900000000).toString() : 'UP2024' + Math.floor(10000000 + Math.random() * 90000000).toString());
 
-    const generatedRefId = `APP-${city.slice(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 90000)}`;
+    const trimmedCity = city.trim() || 'Vrindavan';
+    const cityLower = trimmedCity.toLowerCase();
+    const resolvedCity: 'Mathura' | 'Vrindavan' | 'Barsana' =
+      cityLower.includes('mathura') ? 'Mathura' :
+        cityLower.includes('barsana') ? 'Barsana' : 'Vrindavan';
+
+    const generatedRefId = `APP-${resolvedCity.slice(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 90000)}`;
 
     if (activeTab === 'shop') {
       const newShop = {
         id: 'shop-' + Date.now(),
         name: orgName.trim(),
-        category: category,
-        location: address.trim() || city,
-        address: address.trim() || `${city}, Uttar Pradesh`,
-        city: city,
+        category: category.trim() || 'Pure Veg Traditional Bhojanalaya',
+        location: address.trim() || trimmedCity,
+        address: address.trim() || `${trimmedCity}, Uttar Pradesh`,
+        city: resolvedCity,
         rating: 5.0,
         reputationScore: 80,
         reputationTier: 'Under Review' as const,
@@ -74,31 +83,33 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
         fssaiNumber: sanitizedLicense,
         phone: phone.startsWith('+91') ? phone.trim() : `+91 ${phone.trim()}`,
         contactPerson: contactPerson.trim(),
-        lat: city === 'Mathura' ? 27.4924 : city === 'Barsana' ? 27.6475 : 27.5706,
-        lng: city === 'Mathura' ? 77.6737 : city === 'Barsana' ? 77.3758 : 77.6743,
+        lat: resolvedCity === 'Mathura' ? 27.4924 : resolvedCity === 'Barsana' ? 27.6475 : 27.5706,
+        lng: resolvedCity === 'Mathura' ? 77.6737 : resolvedCity === 'Barsana' ? 77.3758 : 77.6743,
         totalDonatedMeals: 0,
         activeSurplusMeals: 0
       };
 
+      setRegisteredOrgId(newShop.id);
       cache.registerShop(newShop, Number(capacity) || 100);
       if (onRegisteredSuccess) onRegisteredSuccess(newShop.id);
     } else {
       const newNgo = {
         id: 'ngo-' + Date.now(),
         name: orgName.trim(),
-        category: 'Food Recovery' as const,
-        address: address.trim() || `${city}, Uttar Pradesh`,
-        city: city,
+        category: (category.includes('Elder') || category.includes('Shelter') ? 'Shelter Management' : 'Food Recovery') as any,
+        address: address.trim() || `${trimmedCity}, Uttar Pradesh`,
+        city: resolvedCity,
         capacity: Number(capacity) || 150,
         dailyServed: 0,
         verified: false,
         contactPerson: contactPerson.trim(),
         phone: phone.startsWith('+91') ? phone.trim() : `+91 ${phone.trim()}`,
-        lat: city === 'Mathura' ? 27.4950 : city === 'Barsana' ? 27.6500 : 27.5812,
-        lng: city === 'Mathura' ? 77.6750 : city === 'Barsana' ? 77.3800 : 77.6841,
+        lat: resolvedCity === 'Mathura' ? 27.4950 : resolvedCity === 'Barsana' ? 27.6500 : 27.5812,
+        lng: resolvedCity === 'Mathura' ? 77.6750 : resolvedCity === 'Barsana' ? 77.3800 : 77.6841,
         activeVolunteers: 0
       };
 
+      setRegisteredOrgId(newNgo.id);
       cache.registerNgo(newNgo, sanitizedLicense);
       if (onRegisteredSuccess) onRegisteredSuccess(newNgo.id);
     }
@@ -109,6 +120,7 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
 
   const handleResetAndClose = () => {
     setSubmittedRefId(null);
+    setRegisteredOrgId(null);
     setOrgName('');
     setAddress('');
     setLicenseNumber('');
@@ -231,11 +243,48 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+              <button
+                onClick={() => {
+                  const targetId = registeredOrgId || (activeTab === 'shop' ? 'shop-1' : 'ngo-1');
+                  if (onRegisterSuccess) {
+                    onRegisterSuccess(activeTab, targetId);
+                  } else if (onRegisteredSuccess) {
+                    onRegisteredSuccess(targetId);
+                  }
+                  handleResetAndClose();
+                }}
+                className="btn btn-primary"
+                style={{
+                  minHeight: '48px',
+                  padding: '0 28px',
+                  fontSize: '0.94rem',
+                  fontWeight: 800,
+                  width: '100%',
+                  maxWidth: '420px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>
+                  {activeTab === 'shop'
+                    ? (isHindi ? 'सीधे दुकान डैशबोर्ड में प्रवेश करें' : 'Enter My Shop Dashboard Now')
+                    : (isHindi ? 'सीधे आश्रम/एनजीओ हब में प्रवेश करें' : 'Enter My NGO Hub Now')}
+                </span>
+                <ArrowRight size={18} />
+              </button>
+
               <button
                 onClick={handleResetAndClose}
-                className="btn btn-primary"
-                style={{ minHeight: '44px', padding: '0 24px', fontSize: '0.9rem' }}
+                className="btn btn-secondary"
+                style={{
+                  minHeight: '40px',
+                  padding: '0 20px',
+                  fontSize: '0.84rem',
+                  color: 'var(--color-text-muted)'
+                }}
               >
                 <span>{isHindi ? 'लॉगिन पोर्टल पर लौटें' : 'Back to Login Portal'}</span>
               </button>
@@ -346,16 +395,15 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
                   <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)', display: 'block', marginBottom: '4px' }}>
                     {isHindi ? 'शहर / तीर्थ क्षेत्र *' : 'Pilot City / Region *'}
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    required
+                    placeholder={isHindi ? 'उदा. वृन्दावन, मथुरा, बरसाना' : 'e.g. Vrindavan, Mathura, Barsana'}
                     value={city}
-                    onChange={(e) => setCity(e.target.value as any)}
+                    onChange={(e) => setCity(e.target.value)}
                     className="form-input"
                     style={{ width: '100%', height: '42px', fontSize: '0.86rem' }}
-                  >
-                    <option value="Vrindavan">Vrindavan (वृन्दावन)</option>
-                    <option value="Mathura">Mathura (मथुरा)</option>
-                    <option value="Barsana">Barsana (बरसाना)</option>
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -364,35 +412,24 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
                   <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)', display: 'block', marginBottom: '4px' }}>
                     {isHindi ? 'संस्था की श्रेणी *' : 'Category *'}
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    required
+                    placeholder={activeTab === 'shop'
+                      ? (isHindi ? 'उदा. शुद्ध शाकाहारी भोजनालय, मिष्ठान' : 'e.g. Pure Veg Bhojanalaya, Sweet Shop')
+                      : (isHindi ? 'उदा. अन्नक्षेत्र, आश्रम भोजन वितरण' : 'e.g. Food Recovery, Ashram Feeding')}
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="form-input"
                     style={{ width: '100%', height: '42px', fontSize: '0.86rem' }}
-                  >
-                    {activeTab === 'shop' ? (
-                      <>
-                        <option value="Pure Veg Traditional Bhojanalaya">Pure Veg Traditional Bhojanalaya</option>
-                        <option value="Mithai & Traditional Restaurant">Mithai & Traditional Restaurant</option>
-                        <option value="Dhaba & Community Meals">Dhaba & Community Meals</option>
-                        <option value="Catering & Temple Events">Catering & Temple Events</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="Food Recovery & Ashram Feeding">Food Recovery & Ashram Feeding</option>
-                        <option value="Elder Care & Widow Ashram">Elder Care & Widow Ashram</option>
-                        <option value="Charitable Trust & Community Kitchen">Charitable Trust & Community Kitchen</option>
-                        <option value="Youth & Pilgrim Shelter">Youth & Pilgrim Shelter</option>
-                      </>
-                    )}
-                  </select>
+                  />
                 </div>
 
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)', display: 'block', marginBottom: '4px' }}>
-                    {activeTab === 'shop' 
-                      ? (isHindi ? 'FSSAI लाइसेंस नंबर (14 अंक) *' : 'FSSAI License No. (14 digits) *') 
-                      : (isHindi ? 'दर्पण / ट्रस्ट पंजीकरण संख्या (14 अंक/अक्षर) *' : 'Darpan / Trust Reg ID (Up to 14 chars) *')}
+                    {activeTab === 'shop'
+                      ? (isHindi ? 'FSSAI लाइसेंस नंबर *' : 'FSSAI License No.*')
+                      : (isHindi ? 'दर्पण / ट्रस्ट पंजीकरण संख्या*' : 'Trust Reg ID*')}
                   </label>
                   <input
                     type="text"
@@ -455,8 +492,8 @@ export const RegisterOrganizationModal: React.FC<RegisterOrganizationModalProps>
 
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)', display: 'block', marginBottom: '4px' }}>
-                    {activeTab === 'shop' 
-                      ? (isHindi ? 'दैनिक थाली क्षमता' : 'Daily Meal Capacity') 
+                    {activeTab === 'shop'
+                      ? (isHindi ? 'दैनिक थाली क्षमता' : 'Daily Meal Capacity')
                       : (isHindi ? 'दैनिक सेवा क्षमता' : 'Serving Capacity')}
                   </label>
                   <input

@@ -79,6 +79,53 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
 
   return (
     <div>
+      {/* Application Under Review Banner (for newly registered shops) */}
+      {!currentShop?.verified && (
+        <div style={{
+          backgroundColor: '#fffbeb',
+          border: '2px solid #fde68a',
+          borderRadius: '16px',
+          boxShadow: '0 3px 0 #fcd34d',
+          padding: '14px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              backgroundColor: '#fef3c7',
+              border: '2px solid #fde68a',
+              color: '#b45309',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Clock size={22} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#92400e' }}>
+                {isHindi ? 'खाद्य सुरक्षा पंजीकरण सत्यापन प्रक्रियाधीन' : 'Establishment Registration Under FSSAI Review'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: '2px' }}>
+                {isHindi
+                  ? 'आपका प्रतिष्ठान पंजीकृत हो चुका है। खाद्य सुरक्षा अधिकारी द्वारा समीक्षा के उपरांत पूर्ण अनुमोदन बैज सक्रिय होगा।'
+                  : 'Your registration is received. Live food matching and FSSAI trusted merchant badge will activate upon district officer approval.'}
+              </div>
+            </div>
+          </div>
+          <span className="badge badge-amber" style={{ fontSize: '0.76rem', fontWeight: 800 }}>
+            {isHindi ? 'समीक्षाधीन (Under Review)' : 'Under Review'}
+          </span>
+        </div>
+      )}
+
       {/* Shop Profile Header Banner */}
       <div className="glass-panel" style={{
         padding: '24px',

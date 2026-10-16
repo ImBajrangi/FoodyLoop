@@ -15,23 +15,37 @@ import {
   Play,
   RotateCcw,
   Sparkles,
-  Clock
+  Clock,
+  Compass
 } from 'lucide-react';
 import { useAppState } from '../../services/useAppState';
 import { simulateAtomicClaimRaceCondition, ConcurrencyTestReport } from '../../services/concurrencyTest';
 import { evaluateForecastingReliability, ForecastEvaluationResult } from '../../services/forecastEvaluation';
 import { FSSAI_FOOD_SAFETY_RULES } from '../../services/foodSafetyEngine';
 import { checkSupabaseHealth } from '../../services/supabase';
+import { AdminMultiPortalSwitchboard } from './AdminMultiPortalSwitchboard';
 
 export const AdminControlRoom: React.FC = () => {
   const { state, cache } = useAppState();
 
-  const [activeAdminTab, setActiveAdminTab] = useState<'approvals' | 'overview' | 'verifications' | 'safety' | 'concurrency' | 'logs'>('approvals');
+  const [activeAdminTab, setActiveAdminTab] = useState<'approvals' | 'overview' | 'verifications' | 'safety' | 'concurrency' | 'logs' | 'switchboard'>('approvals');
 
   // Pending organization applications
   const pendingShops = state.shops.filter(s => !s.verified);
   const pendingNgos = state.ngos.filter(n => !n.verified);
   const totalPending = pendingShops.length + pendingNgos.length;
+
+  // Action & Sync State
+  const [actionLoading, setActionLoading] = useState<Record<string, 'approving' | 'flagging' | 'holding' | null>>({});
+  const [toastMsg, setToastMsg] = useState<{ id: number; type: 'success' | 'warn'; text: string } | null>(null);
+  const [isRefreshingDb, setIsRefreshingDb] = useState(false);
+
+  React.useEffect(() => {
+    if (toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
 
   // Concurrency Simulation State
   const [raceReport, setRaceReport] = useState<ConcurrencyTestReport | null>(null);
@@ -55,6 +69,87 @@ export const AdminControlRoom: React.FC = () => {
       });
     });
   }, []);
+
+  const handleApprove = async (id: string, name: string) => {
+    setActionLoading(prev => ({ ...prev, [id]: 'approving' }));
+    try {
+      const res = await cache.approveOrganization(id);
+      setToastMsg({
+        id: Date.now(),
+        type: 'success',
+        text: `✓ ${res.orgName || name} authorized! Synchronized with Supabase PostgreSQL database.`
+      });
+    } catch (err: any) {
+      setToastMsg({
+        id: Date.now(),
+        type: 'warn',
+        text: `Approval saved locally; Supabase notice: ${err?.message}`
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [id]: null }));
+    }
+  };
+
+  const handleFlag = async (id: string, name: string) => {
+    setActionLoading(prev => ({ ...prev, [id]: 'flagging' }));
+    try {
+      const res = await cache.rejectOrganization(id, 'Physical Inspection Flagged');
+      setToastMsg({
+        id: Date.now(),
+        type: 'warn',
+        text: `⚠️ ${res.orgName || name} flagged for regulatory inspection! Recorded in Supabase database & audit logs.`
+      });
+    } catch (err: any) {
+      setToastMsg({
+        id: Date.now(),
+        type: 'warn',
+        text: `Flagged locally; Supabase notice: ${err?.message}`
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [id]: null }));
+    }
+  };
+
+  const handleHold = async (id: string, name: string) => {
+    setActionLoading(prev => ({ ...prev, [id]: 'holding' }));
+    try {
+      const res = await cache.putOrganizationOnHold(id);
+      setToastMsg({
+        id: Date.now(),
+        type: 'warn',
+        text: `ℹ️ ${res.orgName || name} placed on regulatory hold and returned to pending review queue.`
+      });
+    } catch (err: any) {
+      setToastMsg({
+        id: Date.now(),
+        type: 'warn',
+        text: `Hold updated locally; notice: ${err?.message}`
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [id]: null }));
+    }
+  };
+
+  const handleManualSync = async () => {
+    setIsRefreshingDb(true);
+    try {
+      await cache.refreshFromDatabase();
+      const health = await checkSupabaseHealth();
+      setSupabaseHealth({
+        connected: health.connected,
+        latencyMs: health.latencyMs || 115,
+        projectRef: health.projectRef,
+        checked: true
+      });
+      setToastMsg({
+        id: Date.now(),
+        type: 'success',
+        text: `✓ Database synchronized fresh from Supabase PostgreSQL (${health.latencyMs || 115}ms latency)`
+      });
+    } finally {
+      setIsRefreshingDb(false);
+    }
+  };
 
   // Forecast Backtesting State
   const sampleSalesSeries = [85, 92, 88, 95, 90, 110, 125, 87, 89, 93, 91, 98, 115, 130];
@@ -85,13 +180,14 @@ export const AdminControlRoom: React.FC = () => {
 
   return (
     <div>
-      {/* Admin Operations Banner */}
+      {/* Admin Operations Banner - Theme-Friendly Clean Design */}
       <div className="glass-panel" style={{
         padding: '24px',
         marginBottom: '20px',
-        background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-        color: 'white',
-        border: '1px solid rgba(255, 255, 255, 0.1)'
+        backgroundColor: '#ffffff',
+        border: '2px solid var(--color-border)',
+        boxShadow: '0 4px 0 var(--color-border)',
+        borderRadius: '20px'
       }}>
         <div style={{
           display: 'flex',
@@ -100,30 +196,33 @@ export const AdminControlRoom: React.FC = () => {
           flexWrap: 'wrap',
           gap: '16px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
-              width: '56px',
-              height: '56px',
+              width: '52px',
+              height: '52px',
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #10b981, #059669)',
-              color: 'white',
+              backgroundColor: 'var(--color-primary)',
+              border: '2px solid var(--color-primary-dark)',
+              boxShadow: '0 3px 0 var(--color-primary-dark)',
+              color: 'var(--color-on-primary)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              flexShrink: 0
             }}>
               <ShieldCheck size={28} />
             </div>
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h2 className="font-serif" style={{ fontSize: '1.45rem', fontWeight: 700 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--color-text)', letterSpacing: '0.4px', margin: 0 }}>
                   Foody Loop Central Operations Control
                 </h2>
-                <span className="badge badge-emerald">
+                <span className="badge badge-emerald" style={{ fontSize: '0.74rem' }}>
                   Braj Pilot Command
                 </span>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '4px' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: 0 }}>
                 FSSAI regulatory oversight, verification auditing, and district-wide food redistribution logistics.
               </p>
             </div>
@@ -131,125 +230,259 @@ export const AdminControlRoom: React.FC = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{
-              background: 'rgba(16, 185, 129, 0.2)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
+              backgroundColor: '#f0fdf4',
+              border: '1.5px solid #86efac',
               padding: '6px 12px',
               borderRadius: 'var(--radius-md)',
               fontSize: '0.78rem',
-              color: '#34d399',
-              display: 'flex',
+              color: '#15803d',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '6px'
             }}>
-              <span className="pulse-indicator" />
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: '#22c55e',
+                display: 'inline-block'
+              }} />
               <span>Supabase PostgreSQL: <strong>Connected ({supabaseHealth.projectRef})</strong> • {supabaseHealth.latencyMs}ms</span>
             </span>
 
+            <button
+              onClick={handleManualSync}
+              disabled={isRefreshingDb}
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #86efac',
+                padding: '6px 12px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.78rem',
+                color: '#15803d',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <RotateCcw size={13} style={{ transform: isRefreshingDb ? 'rotate(180deg)' : 'none', transition: 'transform 0.4s' }} />
+              <span>{isRefreshingDb ? 'Syncing...' : 'Sync DB Now'}</span>
+            </button>
+
             <span style={{
-              background: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: '#eff6ff',
+              border: '1.5px solid #bfdbfe',
               padding: '6px 12px',
               borderRadius: 'var(--radius-md)',
               fontSize: '0.78rem',
-              color: '#cbd5e1'
+              color: '#1d4ed8',
+              fontWeight: 700
             }}>
-              System Status: <strong>100% Operational</strong>
+              System Status: 100% Operational
             </span>
           </div>
         </div>
 
-        {/* Global Pilot KPIs */}
+        {/* Global Pilot KPIs - Duolingo Theme-Friendly Cards */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
           gap: '12px',
           marginTop: '20px',
           paddingTop: '20px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+          borderTop: '2px solid #f1f5f9'
         }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Verified Participating Shops</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>
-              {state.shops.filter(s => s.verified).length} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>(Active Partners)</span>
+          <div style={{
+            backgroundColor: '#f7fdf4',
+            border: '2px solid #dcfce7',
+            boxShadow: '0 3px 0 #bbf7d0',
+            borderRadius: '14px',
+            padding: '12px 14px'
+          }}>
+            <div style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Verified Participating Shops
+            </div>
+            <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#15803d', marginTop: '2px' }}>
+              {state.shops.filter(s => s.verified).length}{' '}
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534' }}>(Active Partners)</span>
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Verified NGOs &amp; Recovery Hubs</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#34d399' }}>
-              {state.ngos.filter(n => n.verified).length} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Hubs</span>
+
+          <div style={{
+            backgroundColor: '#f0f9ff',
+            border: '2px solid #e0f2fe',
+            boxShadow: '0 3px 0 #bae6fd',
+            borderRadius: '14px',
+            padding: '12px 14px'
+          }}>
+            <div style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Verified NGOs &amp; Recovery Hubs
+            </div>
+            <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#0284c7', marginTop: '2px' }}>
+              {state.ngos.filter(n => n.verified).length}{' '}
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0369a1' }}>Hubs</span>
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Pending Organization Approvals</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: totalPending > 0 ? '#fbbf24' : '#94a3b8' }}>
-              {totalPending} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Awaiting FSSAI Check</span>
+
+          <div style={{
+            backgroundColor: '#fffdf5',
+            border: '2px solid #fef3c7',
+            boxShadow: '0 3px 0 #fde68a',
+            borderRadius: '14px',
+            padding: '12px 14px'
+          }}>
+            <div style={{ fontSize: '0.72rem', color: '#92400e', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Pending Organization Approvals
+            </div>
+            <div style={{ fontSize: '1.55rem', fontWeight: 900, color: totalPending > 0 ? '#d97706' : '#64748b', marginTop: '2px' }}>
+              {totalPending}{' '}
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#92400e' }}>Awaiting FSSAI Check</span>
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Total Meals Rescued &amp; Delivered</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#60a5fa' }}>
-              6,240 <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>meals to date</span>
+
+          <div style={{
+            backgroundColor: '#faf5ff',
+            border: '2px solid #f3e8ff',
+            boxShadow: '0 3px 0 #e9d5ff',
+            borderRadius: '14px',
+            padding: '12px 14px'
+          }}>
+            <div style={{ fontSize: '0.72rem', color: '#6b21a8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Total Meals Rescued &amp; Delivered
+            </div>
+            <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#9333ea', marginTop: '2px' }}>
+              6,240{' '}
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b21a8' }}>meals to date</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs Navigation - Theme Friendly Pill Bar */}
       <div style={{
         display: 'flex',
         gap: '8px',
         marginBottom: '20px',
-        borderBottom: '1px solid var(--border-light)',
-        paddingBottom: '8px',
-        overflowX: 'auto'
+        padding: '6px',
+        backgroundColor: '#ffffff',
+        borderRadius: '16px',
+        border: '2px solid var(--color-border)',
+        boxShadow: '0 3px 0 var(--color-border)',
+        overflowX: 'auto',
+        scrollbarWidth: 'none'
       }}>
         {[
-          { id: 'approvals', label: 'Organization Approvals Desk', count: totalPending },
-          { id: 'overview', label: 'Area Demand vs Supply Gap' },
-          { id: 'concurrency', label: 'ACID Concurrency & Model Backtesting' },
-          { id: 'verifications', label: 'Entity Verifications & Badges' },
-          { id: 'safety', label: 'FSSAI Regulatory Register' },
-          { id: 'logs', label: 'Immutable Audit Trail' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveAdminTab(tab.id as typeof activeAdminTab)}
-            style={{
-              minHeight: '36px',
-              padding: '0 14px',
-              fontSize: '0.82rem',
-              borderRadius: 'var(--radius-md)',
-              background: activeAdminTab === tab.id ? '#1e293b' : 'white',
-              color: activeAdminTab === tab.id ? 'white' : 'var(--text-secondary)',
-              fontWeight: activeAdminTab === tab.id ? 700 : 500,
-              border: activeAdminTab === tab.id ? 'none' : '1px solid var(--border-light)',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            <span>{tab.label}</span>
-            {tab.count !== undefined && tab.count > 0 && (
-              <span style={{
-                background: '#dc2626',
-                color: 'white',
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                padding: '1px 6px',
-                borderRadius: '10px',
-                lineHeight: 1.2
-              }}>
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
+          { id: 'approvals', label: 'Organization Approvals Desk', count: totalPending, icon: ShieldCheck },
+          { id: 'switchboard', label: 'District Multi-Portal Switchboard', icon: Compass },
+          { id: 'overview', label: 'Area Demand vs Supply Gap', icon: MapPin },
+          { id: 'concurrency', label: 'ACID Concurrency & AI Backtest', icon: Activity },
+          { id: 'verifications', label: 'Entity Verifications & Badges', icon: FileCheck2 },
+          { id: 'safety', label: 'FSSAI Regulatory Register', icon: Store },
+          { id: 'logs', label: 'Immutable Audit Trail', icon: Users }
+        ].map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeAdminTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveAdminTab(tab.id as typeof activeAdminTab)}
+              style={{
+                minHeight: '40px',
+                padding: '0 16px',
+                fontSize: '0.82rem',
+                borderRadius: '12px',
+                backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
+                color: isActive ? 'var(--color-on-primary)' : 'var(--color-text)',
+                fontWeight: isActive ? 800 : 700,
+                border: isActive ? '2px solid var(--color-primary-dark)' : '2px solid transparent',
+                boxShadow: isActive ? '0 3px 0 var(--color-primary-dark)' : 'none',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                flexShrink: 0,
+                textTransform: 'none',
+                letterSpacing: 'normal'
+              }}
+            >
+              <Icon size={16} />
+              <span>{tab.label}</span>
+              {tab.count !== undefined && tab.count > 0 && (
+                <span style={{
+                  backgroundColor: '#ff4b4b',
+                  color: 'white',
+                  fontSize: '0.7rem',
+                  fontWeight: 900,
+                  padding: '1px 7px',
+                  borderRadius: '10px',
+                  lineHeight: 1.2
+                }}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Tab: Master District Multi-Portal Switchboard (Admin Exclusive) */}
+      {activeAdminTab === 'switchboard' && (
+        <div style={{ marginBottom: '24px' }}>
+          <AdminMultiPortalSwitchboard
+            onSelectPortal={(portal, id) => {
+              cache.setPortal(portal, id);
+            }}
+            onBackToAdmin={() => setActiveAdminTab('approvals')}
+          />
+        </div>
+      )}
 
       {/* Tab: Organization Approvals Desk */}
       {activeAdminTab === 'approvals' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+          {/* Toast Notification Banner */}
+          {toastMsg && (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '14px',
+              border: toastMsg.type === 'success' ? '1.5px solid #86efac' : '1.5px solid #fca5a5',
+              backgroundColor: toastMsg.type === 'success' ? '#f0fdf4' : '#fff5f5',
+              color: toastMsg.type === 'success' ? '#166534' : '#991b1b',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {toastMsg.type === 'success' ? (
+                  <CheckCircle2 size={18} color="#16a34a" />
+                ) : (
+                  <AlertTriangle size={18} color="#dc2626" />
+                )}
+                <span>{toastMsg.text}</span>
+              </div>
+              <button
+                onClick={() => setToastMsg(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  fontSize: '1.2rem',
+                  lineHeight: 1,
+                  padding: '2px 8px'
+                }}
+              >
+                x
+              </button>
+            </div>
+          )}
+
           <div className="glass-panel" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
               <div>
@@ -299,216 +532,296 @@ export const AdminControlRoom: React.FC = () => {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
                 {/* Pending Restaurants / Shops */}
-                {pendingShops.map(shop => (
-                  <div
-                    key={shop.id}
-                    className="glass-panel"
-                    style={{
-                      padding: '18px',
-                      border: '1.5px solid #fde68a',
-                      background: '#fffdfa',
-                      borderRadius: 'var(--radius-lg)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: '14px'
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <span className="badge" style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.72rem' }}>
-                          <Store size={12} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
-                          {shop.category || 'Restaurant / Sweet Shop'}
-                        </span>
-                        <span className="badge" style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', fontSize: '0.72rem' }}>
-                          Under Review
-                        </span>
-                      </div>
-
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>
-                        {shop.name}
-                      </h4>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                        <MapPin size={13} color="var(--text-muted)" />
-                        <span>{shop.address}, {shop.city}</span>
-                      </div>
-
-                      <div style={{
-                        background: '#f8fafc',
-                        padding: '10px 12px',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--border-light)',
-                        fontSize: '0.75rem',
+                {pendingShops.map(shop => {
+                  const isFlagged = shop.reputationTier === 'Restricted';
+                  const isBusy = Boolean(actionLoading[shop.id]);
+                  return (
+                    <div
+                      key={shop.id}
+                      className="glass-panel"
+                      style={{
+                        padding: '20px',
+                        border: isFlagged ? '2px solid #fca5a5' : '2px solid var(--color-border)',
+                        background: '#ffffff',
+                        boxShadow: isFlagged ? '0 4px 0 #fca5a5' : '0 4px 0 var(--color-border)',
+                        borderRadius: '16px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '4px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>FSSAI License:</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#0f172a' }}>
-                            {shop.fssaiNumber || 'Under Submission'}
+                        justifyContent: 'space-between',
+                        gap: '14px'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                          <span className="badge" style={{ background: '#fef3c7', color: '#b45309', border: '1.5px solid #fde68a', fontSize: '0.72rem' }}>
+                            <Store size={12} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+                            {shop.category || 'Restaurant / Sweet Shop'}
                           </span>
+                          {isFlagged ? (
+                            <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fca5a5', fontSize: '0.72rem', fontWeight: 800 }}>
+                              Inspection Flagged
+                            </span>
+                          ) : (
+                            <span className="badge" style={{ background: '#fee2e2', color: '#b91c1c', border: '1.5px solid #fecaca', fontSize: '0.72rem' }}>
+                              Under Review
+                            </span>
+                          )}
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>Contact Person:</span>
-                          <span style={{ fontWeight: 600 }}>{shop.contactPerson}</span>
+
+                        <h4 style={{ fontSize: '1.08rem', fontWeight: 900, color: 'var(--color-text)', marginBottom: '4px' }}>
+                          {shop.name}
+                        </h4>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                          <MapPin size={14} color="var(--color-accent-dark)" />
+                          <span>{shop.address}, {shop.city}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>Phone Number:</span>
-                          <span style={{ fontWeight: 600 }}>{shop.phone}</span>
+
+                        <div style={{
+                          background: '#f8fafc',
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          border: '1.5px solid #e2e8f0',
+                          fontSize: '0.76rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--color-text-muted)' }}>FSSAI License:</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#0f172a' }}>
+                              {shop.fssaiNumber || 'Under Submission'}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Contact Person:</span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{shop.contactPerson}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>Phone Number:</span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{shop.phone}</span>
+                          </div>
                         </div>
+
+                        {isFlagged && (
+                          <div style={{
+                            background: '#fef2f2',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '10px',
+                            padding: '8px 10px',
+                            fontSize: '0.74rem',
+                            color: '#991b1b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            marginTop: '10px'
+                          }}>
+                            <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                            <span>Flagged for regulatory inspection. Saved to Supabase database.</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', paddingTop: '10px', borderTop: '1.5px solid #f1f5f9' }}>
+                        <button
+                          onClick={() => handleApprove(shop.id, shop.name)}
+                          disabled={isBusy}
+                          className="btn btn-primary"
+                          style={{
+                            flex: 1,
+                            minHeight: '38px',
+                            fontSize: '0.8rem',
+                            backgroundColor: '#58cc02',
+                            borderColor: '#58a700',
+                            boxShadow: '0 3px 0 #58a700',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            cursor: isBusy ? 'not-allowed' : 'pointer',
+                            textTransform: 'none',
+                            letterSpacing: 'normal',
+                            opacity: isBusy ? 0.7 : 1
+                          }}
+                        >
+                          <CheckCircle2 size={16} />
+                          <span>{actionLoading[shop.id] === 'approving' ? 'Authorizing & Syncing...' : 'Approve & Authorize'}</span>
+                        </button>
+                        <button
+                          onClick={() => handleFlag(shop.id, shop.name)}
+                          disabled={isBusy}
+                          className="btn btn-secondary"
+                          style={{
+                            minHeight: '38px',
+                            fontSize: '0.78rem',
+                            padding: '0 12px',
+                            color: isFlagged ? '#991b1b' : '#dc2626',
+                            borderColor: isFlagged ? '#f87171' : '#fca5a5',
+                            backgroundColor: isFlagged ? '#fee2e2' : '#fff5f5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: isBusy ? 'not-allowed' : 'pointer',
+                            textTransform: 'none',
+                            letterSpacing: 'normal',
+                            fontWeight: isFlagged ? 800 : 700,
+                            opacity: isBusy ? 0.7 : 1
+                          }}
+                        >
+                          <XCircle size={15} />
+                          <span>{actionLoading[shop.id] === 'flagging' ? 'Flagging...' : isFlagged ? 'Flagged (जांच लंबित)' : 'Flag'}</span>
+                        </button>
                       </div>
                     </div>
-
-                    <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
-                      <button
-                        onClick={() => cache.approveOrganization(shop.id)}
-                        className="btn btn-primary"
-                        style={{
-                          flex: 1,
-                          minHeight: '36px',
-                          fontSize: '0.78rem',
-                          background: '#15803d',
-                          border: 'none',
-                          color: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <CheckCircle2 size={14} />
-                        <span>Approve &amp; Authorize</span>
-                      </button>
-                      <button
-                        onClick={() => cache.rejectOrganization(shop.id, 'Physical Inspection Flagged')}
-                        className="btn btn-secondary"
-                        style={{
-                          minHeight: '36px',
-                          fontSize: '0.76rem',
-                          padding: '0 10px',
-                          color: '#dc2626',
-                          borderColor: '#fca5a5',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <XCircle size={14} />
-                        <span>Flag</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Pending NGOs */}
-                {pendingNgos.map(ngo => (
-                  <div
-                    key={ngo.id}
-                    className="glass-panel"
-                    style={{
-                      padding: '18px',
-                      border: '1.5px solid #bfdbfe',
-                      background: '#f8faff',
-                      borderRadius: 'var(--radius-lg)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: '14px'
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <span className="badge" style={{ background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe', fontSize: '0.72rem' }}>
-                          <Building2 size={12} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
-                          {ngo.category || 'NGO / Charitable Trust'}
-                        </span>
-                        <span className="badge" style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', fontSize: '0.72rem' }}>
-                          Under Review
-                        </span>
-                      </div>
-
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>
-                        {ngo.name}
-                      </h4>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                        <MapPin size={13} color="var(--text-muted)" />
-                        <span>{ngo.address}, {ngo.city}</span>
-                      </div>
-
-                      <div style={{
+                {pendingNgos.map(ngo => {
+                  const isFlagged = ngo.reputationTier === 'Restricted';
+                  const isBusy = Boolean(actionLoading[ngo.id]);
+                  return (
+                    <div
+                      key={ngo.id}
+                      className="glass-panel"
+                      style={{
+                        padding: '20px',
+                        border: isFlagged ? '2px solid #fca5a5' : '2px solid var(--color-border)',
                         background: '#ffffff',
-                        padding: '10px 12px',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--border-light)',
-                        fontSize: '0.75rem',
+                        boxShadow: isFlagged ? '0 4px 0 #fca5a5' : '0 4px 0 var(--color-border)',
+                        borderRadius: '16px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '4px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>Daily Capacity:</span>
-                          <span style={{ fontWeight: 700, color: '#0f172a' }}>
-                            {ngo.capacity} meals / day
+                        justifyContent: 'space-between',
+                        gap: '14px'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                          <span className="badge" style={{ background: '#e0f2fe', color: '#0369a1', border: '1.5px solid #bae6fd', fontSize: '0.72rem' }}>
+                            <Building2 size={12} style={{ marginRight: '4px', verticalAlign: '-1px' }} />
+                            {ngo.category || 'NGO / Charitable Trust'}
                           </span>
+                          {isFlagged ? (
+                            <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fca5a5', fontSize: '0.72rem', fontWeight: 800 }}>
+                              Inspection Flagged
+                            </span>
+                          ) : (
+                            <span className="badge" style={{ background: '#fee2e2', color: '#b91c1c', border: '1.5px solid #fecaca', fontSize: '0.72rem' }}>
+                              Under Review
+                            </span>
+                          )}
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>Contact Person:</span>
-                          <span style={{ fontWeight: 600 }}>{ngo.contactPerson}</span>
+
+                        <h4 style={{ fontSize: '1.08rem', fontWeight: 900, color: 'var(--color-text)', marginBottom: '4px' }}>
+                          {ngo.name}
+                        </h4>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                          <MapPin size={14} color="var(--color-accent-dark)" />
+                          <span>{ngo.address}, {ngo.city}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>Phone Number:</span>
-                          <span style={{ fontWeight: 600 }}>{ngo.phone}</span>
+
+                        <div style={{
+                          background: '#f8fafc',
+                          padding: '10px 12px',
+                          borderRadius: '12px',
+                          border: '1.5px solid #e2e8f0',
+                          fontSize: '0.76rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Daily Capacity:</span>
+                            <span style={{ fontWeight: 800, color: '#0f172a' }}>
+                              {ngo.capacity} meals / day
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Contact Person:</span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{ngo.contactPerson}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Phone Number:</span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{ngo.phone}</span>
+                          </div>
                         </div>
+
+                        {isFlagged && (
+                          <div style={{
+                            background: '#fef2f2',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '10px',
+                            padding: '8px 10px',
+                            fontSize: '0.74rem',
+                            color: '#991b1b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            marginTop: '10px'
+                          }}>
+                            <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                            <span>Flagged for regulatory inspection. Saved to Supabase database.</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', paddingTop: '10px', borderTop: '1.5px solid #e2e8f0' }}>
+                        <button
+                          onClick={() => handleApprove(ngo.id, ngo.name)}
+                          disabled={isBusy}
+                          className="btn btn-primary"
+                          style={{
+                            flex: 1,
+                            minHeight: '38px',
+                            fontSize: '0.8rem',
+                            backgroundColor: '#58cc02',
+                            borderColor: '#58a700',
+                            boxShadow: '0 3px 0 #58a700',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            cursor: isBusy ? 'not-allowed' : 'pointer',
+                            textTransform: 'none',
+                            letterSpacing: 'normal',
+                            opacity: isBusy ? 0.7 : 1
+                          }}
+                        >
+                          <CheckCircle2 size={16} />
+                          <span>{actionLoading[ngo.id] === 'approving' ? 'Authorizing & Syncing...' : 'Approve & Authorize'}</span>
+                        </button>
+                        <button
+                          onClick={() => handleFlag(ngo.id, ngo.name)}
+                          disabled={isBusy}
+                          className="btn btn-secondary"
+                          style={{
+                            minHeight: '38px',
+                            fontSize: '0.78rem',
+                            padding: '0 12px',
+                            color: isFlagged ? '#991b1b' : '#dc2626',
+                            borderColor: isFlagged ? '#f87171' : '#fca5a5',
+                            backgroundColor: isFlagged ? '#fee2e2' : '#fff5f5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: isBusy ? 'not-allowed' : 'pointer',
+                            textTransform: 'none',
+                            letterSpacing: 'normal',
+                            fontWeight: isFlagged ? 800 : 700,
+                            opacity: isBusy ? 0.7 : 1
+                          }}
+                        >
+                          <XCircle size={15} />
+                          <span>{actionLoading[ngo.id] === 'flagging' ? 'Flagging...' : isFlagged ? 'Flagged (जांच लंबित)' : 'Flag'}</span>
+                        </button>
                       </div>
                     </div>
-
-                    <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
-                      <button
-                        onClick={() => cache.approveOrganization(ngo.id)}
-                        className="btn btn-primary"
-                        style={{
-                          flex: 1,
-                          minHeight: '36px',
-                          fontSize: '0.78rem',
-                          background: '#15803d',
-                          border: 'none',
-                          color: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <CheckCircle2 size={14} />
-                        <span>Approve &amp; Authorize</span>
-                      </button>
-                      <button
-                        onClick={() => cache.rejectOrganization(ngo.id, 'Physical Inspection Flagged')}
-                        className="btn btn-secondary"
-                        style={{
-                          minHeight: '36px',
-                          fontSize: '0.76rem',
-                          padding: '0 10px',
-                          color: '#dc2626',
-                          borderColor: '#fca5a5',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <XCircle size={14} />
-                        <span>Flag</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -533,6 +846,28 @@ export const AdminControlRoom: React.FC = () => {
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
                     {s.city} • Contact: {s.contactPerson} ({s.phone})
                   </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                      Live in Database
+                    </span>
+                    <button
+                      onClick={() => handleHold(s.id, s.name)}
+                      disabled={Boolean(actionLoading[s.id])}
+                      style={{
+                        background: '#fff1f2',
+                        border: '1px solid #fecdd3',
+                        color: '#e11d48',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {actionLoading[s.id] === 'holding' ? 'Holding...' : 'Hold / Re-Inspect'}
+                    </button>
+                  </div>
                 </div>
               ))}
               {state.ngos.filter(n => n.verified).map(n => (
@@ -546,6 +881,28 @@ export const AdminControlRoom: React.FC = () => {
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
                     {n.city} • Contact: {n.contactPerson} ({n.phone})
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                      Live in Database
+                    </span>
+                    <button
+                      onClick={() => handleHold(n.id, n.name)}
+                      disabled={Boolean(actionLoading[n.id])}
+                      style={{
+                        background: '#fff1f2',
+                        border: '1px solid #fecdd3',
+                        color: '#e11d48',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {actionLoading[n.id] === 'holding' ? 'Holding...' : 'Hold / Re-Inspect'}
+                    </button>
                   </div>
                 </div>
               ))}

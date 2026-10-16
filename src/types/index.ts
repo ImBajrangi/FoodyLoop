@@ -53,6 +53,9 @@ export interface Ngo {
   lat: number;
   lng: number;
   activeVolunteers: number;
+  reputationTier?: ReputationTier;
+  reputationScore?: number;
+  fssaiNumber?: string;
 }
 
 export interface Beneficiary {

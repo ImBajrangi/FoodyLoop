@@ -19,12 +19,11 @@ export function App() {
   const [selectedCertificate, setSelectedCertificate] = useState<Sponsorship | null>(null);
   const [showAdminView, setShowAdminView] = useState(false);
 
-  // If user hasn't selected a portal yet, show the 2-Category Login & Gateway Screen
   if (!state.portal) {
     return (
       <LoginPortal
-        onSelectPortal={(portal, id) => {
-          cache.setPortal(portal, id);
+        onSelectPortal={(portal, id, role) => {
+          cache.setPortal(portal, id, role);
         }}
       />
     );

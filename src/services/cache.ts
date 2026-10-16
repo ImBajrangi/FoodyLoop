@@ -242,6 +242,7 @@ class CacheService {
     volunteers?: Volunteer[];
     donations?: Donation[];
     sponsorships?: Sponsorship[];
+    auditLogs?: AuditLog[];
   }) {
     if (data.shops && data.shops.length > 0) {
       this.state.shops = data.shops;
@@ -267,18 +268,23 @@ class CacheService {
     if (data.sponsorships && data.sponsorships.length > 0) {
       this.state.sponsorships = data.sponsorships;
     }
+    if (data.auditLogs && data.auditLogs.length > 0) {
+      const existingIds = new Set(this.state.auditLogs.map(a => a.id));
+      const freshLogs = data.auditLogs.filter(a => !existingIds.has(a.id));
+      this.state.auditLogs = [...freshLogs, ...this.state.auditLogs].slice(0, 60);
+    }
     this.state.dbConnected = true;
     this.save(this.state);
     this.notifyLocal();
   }
 
-  public setPortal(portal: PortalType, activeEntityId?: string) {
+  public setPortal(portal: PortalType, activeEntityId?: string, specificRole?: UserRole) {
     this.state.portal = portal;
     if (portal === 'shop') {
       this.state.role = 'shop';
       if (activeEntityId) this.state.activeShopId = activeEntityId;
     } else if (portal === 'ngo_donor') {
-      this.state.role = 'ngo';
+      this.state.role = specificRole || 'ngo';
       if (activeEntityId) this.state.activeNgoId = activeEntityId;
     } else if (portal === 'admin') {
       this.state.role = 'admin';
@@ -349,20 +355,25 @@ class CacheService {
     });
   }
 
-  public approveOrganization(orgId: string) {
+  public async approveOrganization(orgId: string): Promise<{ success: boolean; orgName?: string }> {
     let orgName = '';
+    let fssaiNumber = '';
     const shop = this.state.shops.find(s => s.id === orgId);
     if (shop) {
       shop.verified = true;
       shop.reputationTier = 'Active Partner';
       shop.reputationScore = 95;
       orgName = shop.name;
+      fssaiNumber = shop.fssaiNumber;
     }
 
     const ngo = this.state.ngos.find(n => n.id === orgId);
     if (ngo) {
       ngo.verified = true;
+      ngo.reputationTier = 'Active Partner';
+      ngo.reputationScore = 95;
       orgName = ngo.name;
+      fssaiNumber = ngo.fssaiNumber || '';
     }
 
     this.addAuditLog({
@@ -375,19 +386,34 @@ class CacheService {
     });
 
     this.notify();
-    dbSync.approveOrganization(orgId);
+    const res = await dbSync.approveOrganization(orgId, orgName, fssaiNumber);
+    if (res.realId && res.realId !== orgId) {
+      if (shop) shop.id = res.realId;
+      if (ngo) ngo.id = res.realId;
+      this.notify();
+    }
+    return { success: res.success, orgName };
   }
 
-  public rejectOrganization(orgId: string, reason?: string) {
+  public async rejectOrganization(orgId: string, reason?: string): Promise<{ success: boolean; orgName?: string }> {
+    let orgName = '';
+    let fssaiNumber = '';
     const shop = this.state.shops.find(s => s.id === orgId);
     if (shop) {
       shop.verified = false;
       shop.reputationTier = 'Restricted';
+      shop.reputationScore = 60;
+      orgName = shop.name;
+      fssaiNumber = shop.fssaiNumber;
     }
 
     const ngo = this.state.ngos.find(n => n.id === orgId);
     if (ngo) {
       ngo.verified = false;
+      ngo.reputationTier = 'Restricted';
+      ngo.reputationScore = 60;
+      orgName = ngo.name;
+      fssaiNumber = ngo.fssaiNumber || '';
     }
 
     this.addAuditLog({
@@ -396,11 +422,56 @@ class CacheService {
       actor: 'Food Safety Officer Mathura',
       action: 'ORGANIZATION_RESTRICTED',
       category: 'Verification',
-      details: `Registration flagged: ${reason || 'Physical inspection required'}.`
+      details: `Registration flagged: ${reason || 'Physical inspection required'} (${orgName || orgId}).`
     });
 
     this.notify();
-    dbSync.rejectOrganization(orgId, reason);
+    const res = await dbSync.rejectOrganization(orgId, reason, orgName, fssaiNumber);
+    return { success: res.success, orgName };
+  }
+
+  public async putOrganizationOnHold(orgId: string): Promise<{ success: boolean; orgName?: string }> {
+    let orgName = '';
+    let fssaiNumber = '';
+    const shop = this.state.shops.find(s => s.id === orgId);
+    if (shop) {
+      shop.verified = false;
+      shop.reputationTier = 'Under Review';
+      shop.reputationScore = 80;
+      orgName = shop.name;
+      fssaiNumber = shop.fssaiNumber;
+    }
+
+    const ngo = this.state.ngos.find(n => n.id === orgId);
+    if (ngo) {
+      ngo.verified = false;
+      ngo.reputationTier = 'Under Review';
+      ngo.reputationScore = 80;
+      orgName = ngo.name;
+      fssaiNumber = ngo.fssaiNumber || '';
+    }
+
+    this.addAuditLog({
+      id: 'LOG-' + Date.now(),
+      timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      actor: 'Food Safety Officer Mathura',
+      action: 'ORGANIZATION_HOLD',
+      category: 'Verification',
+      details: `Regulatory hold: ${orgName || orgId}. Moved back to pending verification queue.`
+    });
+
+    this.notify();
+    const res = await dbSync.putOrganizationOnHold(orgId, orgName, fssaiNumber);
+    return { success: res.success, orgName };
+  }
+
+  public async refreshFromDatabase(): Promise<boolean> {
+    const liveData = await dbSync.fetchLiveState();
+    if (liveData) {
+      this.hydrateFromDatabase(liveData);
+      return true;
+    }
+    return false;
   }
 
   public logout() {

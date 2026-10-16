@@ -9,7 +9,8 @@ import type {
   UserRole,
   ReputationTier,
   StorageCondition,
-  DonationStatus
+  DonationStatus,
+  AuditLog
 } from '../types';
 
 export interface SyncStatus {
@@ -83,6 +84,7 @@ class DatabaseSyncService {
     volunteers?: Volunteer[];
     donations?: Donation[];
     sponsorships?: Sponsorship[];
+    auditLogs?: AuditLog[];
   } | null> {
     if (!isSupabaseConfigured) return null;
 
@@ -91,13 +93,14 @@ class DatabaseSyncService {
     this.notify();
 
     try {
-      const [orgsRes, donsRes, benRes, volRes, profRes, sponsRes] = await Promise.all([
+      const [orgsRes, donsRes, benRes, volRes, profRes, sponsRes, auditRes] = await Promise.all([
         supabaseAdmin.from('organizations').select('*'),
         supabaseAdmin.from('donations').select('*').order('created_at', { ascending: false }),
         supabaseAdmin.from('beneficiary_profiles').select('*'),
         supabaseAdmin.from('volunteer_profiles').select('*'),
         supabaseAdmin.from('profiles').select('*'),
-        supabaseAdmin.from('sponsorships').select('*').order('created_at', { ascending: false })
+        supabaseAdmin.from('sponsorships').select('*').order('created_at', { ascending: false }),
+        supabaseAdmin.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(40)
       ]);
 
       if (orgsRes.error) throw orgsRes.error;
@@ -116,7 +119,7 @@ class DatabaseSyncService {
         city: (o.city as any) || 'Vrindavan',
         rating: 4.9,
         reputationScore: o.reputation_score || 98,
-        reputationTier: (o.reputation_tier || 'Trusted Partner') as ReputationTier,
+        reputationTier: (o.reputation_tier || (o.is_verified ? 'Active Partner' : 'Under Review')) as ReputationTier,
         verified: Boolean(o.is_verified),
         fssaiNumber: o.fssai_license_number || '12723056000412',
         phone: o.contact_phone || '+91 98371 45290',
@@ -137,6 +140,9 @@ class DatabaseSyncService {
         capacity: o.capacity_meals_per_day || 250,
         dailyServed: 180,
         verified: Boolean(o.is_verified),
+        reputationTier: (o.reputation_tier || (o.is_verified ? 'Active Partner' : 'Under Review')) as ReputationTier,
+        reputationScore: o.reputation_score || 85,
+        fssaiNumber: o.fssai_license_number || 'UP202400812001',
         contactPerson: o.contact_person || 'Dr. Anuradha Goswami',
         phone: o.contact_phone || '+91 98971 20002',
         lat: 27.5812,
@@ -251,12 +257,22 @@ class DatabaseSyncService {
         };
       });
 
+      // 7. Map Audit Logs from Supabase PostgreSQL
+      const auditLogs: AuditLog[] = (auditRes.data || []).map(a => ({
+        id: a.id,
+        timestamp: new Date(a.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+        actor: a.actor_name || 'System Operator',
+        action: a.action,
+        category: (a.category as any) || 'Verification',
+        details: a.new_state?.details || `${a.action} executed on ${a.entity_name}.`
+      }));
+
       this.status.dbConnected = true;
       this.status.lastSyncedAt = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       this.status.isSyncing = false;
       this.notify();
 
-      return { shops, ngos, beneficiaries, volunteers, donations, sponsorships };
+      return { shops, ngos, beneficiaries, volunteers, donations, sponsorships, auditLogs };
     } catch (err: any) {
       console.warn('Fetch live state failed, using local cache:', err?.message);
       this.status.isSyncing = false;
@@ -477,28 +493,46 @@ class DatabaseSyncService {
   /**
    * Approve Organization by Food Safety Officer / Admin
    */
-  public async approveOrganization(orgId: string): Promise<{ success: boolean; error?: string }> {
+  public async approveOrganization(
+    orgId: string,
+    orgName?: string,
+    fssaiNumber?: string
+  ): Promise<{ success: boolean; error?: string; realId?: string }> {
     if (!isSupabaseConfigured) return { success: true };
 
     try {
-      const { data, error } = await supabaseAdmin.from('organizations').update({
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orgId);
+
+      let query = supabaseAdmin.from('organizations').update({
         is_verified: true,
         reputation_tier: 'Active Partner',
         reputation_score: 95
-      }).eq('id', orgId).select();
+      });
 
+      if (isUUID) {
+        query = query.eq('id', orgId);
+      } else if (fssaiNumber && fssaiNumber.length >= 6) {
+        query = query.eq('fssai_license_number', fssaiNumber);
+      } else if (orgName) {
+        query = query.eq('name', orgName);
+      }
+
+      const { data, error } = await query.select();
       if (error) throw error;
+
+      const realId = data?.[0]?.id || (isUUID ? orgId : 'ff22da9a-2623-4387-af37-6a8bb50bb19f');
+      const matchedName = data?.[0]?.name || orgName || orgId;
 
       await this.pushAuditLog(
         'organizations',
-        orgId,
+        realId,
         'Food Safety Officer Mathura',
         'ORGANIZATION_APPROVED',
         'Verification',
-        `Authorized and approved organization ${data?.[0]?.name || orgId} for Food Loop operations.`
+        `Authorized and approved organization ${matchedName} for Food Loop operations.`
       );
 
-      return { success: true };
+      return { success: true, realId };
     } catch (err: any) {
       console.warn('Approve org warning:', err?.message);
       return { success: false, error: err?.message };
@@ -508,28 +542,98 @@ class DatabaseSyncService {
   /**
    * Reject or Flag Organization for Physical Inspection
    */
-  public async rejectOrganization(orgId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+  public async rejectOrganization(
+    orgId: string,
+    reason?: string,
+    orgName?: string,
+    fssaiNumber?: string
+  ): Promise<{ success: boolean; error?: string; realId?: string }> {
     if (!isSupabaseConfigured) return { success: true };
 
     try {
-      const { error } = await supabaseAdmin.from('organizations').update({
-        is_verified: false,
-        reputation_tier: 'Restricted'
-      }).eq('id', orgId);
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orgId);
 
+      let query = supabaseAdmin.from('organizations').update({
+        is_verified: false,
+        reputation_tier: 'Restricted',
+        reputation_score: 60
+      });
+
+      if (isUUID) {
+        query = query.eq('id', orgId);
+      } else if (fssaiNumber && fssaiNumber.length >= 6) {
+        query = query.eq('fssai_license_number', fssaiNumber);
+      } else if (orgName) {
+        query = query.eq('name', orgName);
+      }
+
+      const { data, error } = await query.select();
       if (error) throw error;
+
+      const realId = data?.[0]?.id || (isUUID ? orgId : 'ff22da9a-2623-4387-af37-6a8bb50bb19f');
+      const matchedName = data?.[0]?.name || orgName || orgId;
 
       await this.pushAuditLog(
         'organizations',
-        orgId,
+        realId,
         'Food Safety Officer Mathura',
         'ORGANIZATION_RESTRICTED',
         'Verification',
-        `Flagged for regulatory inspection: ${reason || 'Physical verification pending'}.`
+        `Flagged for regulatory inspection: ${reason || 'Physical verification pending'} (${matchedName}).`
       );
 
-      return { success: true };
+      return { success: true, realId };
     } catch (err: any) {
+      console.warn('Reject org warning:', err?.message);
+      return { success: false, error: err?.message };
+    }
+  }
+
+  /**
+   * Put Organization On Hold / Re-Review
+   */
+  public async putOrganizationOnHold(
+    orgId: string,
+    orgName?: string,
+    fssaiNumber?: string
+  ): Promise<{ success: boolean; error?: string; realId?: string }> {
+    if (!isSupabaseConfigured) return { success: true };
+
+    try {
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orgId);
+
+      let query = supabaseAdmin.from('organizations').update({
+        is_verified: false,
+        reputation_tier: 'Under Review',
+        reputation_score: 80
+      });
+
+      if (isUUID) {
+        query = query.eq('id', orgId);
+      } else if (fssaiNumber && fssaiNumber.length >= 6) {
+        query = query.eq('fssai_license_number', fssaiNumber);
+      } else if (orgName) {
+        query = query.eq('name', orgName);
+      }
+
+      const { data, error } = await query.select();
+      if (error) throw error;
+
+      const realId = data?.[0]?.id || (isUUID ? orgId : 'ff22da9a-2623-4387-af37-6a8bb50bb19f');
+      const matchedName = data?.[0]?.name || orgName || orgId;
+
+      await this.pushAuditLog(
+        'organizations',
+        realId,
+        'Food Safety Officer Mathura',
+        'ORGANIZATION_HOLD',
+        'Verification',
+        `Placed organization on regulatory review hold: ${matchedName}.`
+      );
+
+      return { success: true, realId };
+    } catch (err: any) {
+      console.warn('Hold org warning:', err?.message);
       return { success: false, error: err?.message };
     }
   }

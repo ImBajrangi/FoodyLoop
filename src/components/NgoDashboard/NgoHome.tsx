@@ -64,6 +64,53 @@ export const NgoHome: React.FC = () => {
 
   return (
     <div>
+      {/* Application Under Review Banner (for newly registered NGOs / Ashrams) */}
+      {!currentNgo?.verified && (
+        <div style={{
+          backgroundColor: '#fffbeb',
+          border: '2px solid #fde68a',
+          borderRadius: '16px',
+          boxShadow: '0 3px 0 #fcd34d',
+          padding: '14px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              backgroundColor: '#fef3c7',
+              border: '2px solid #fde68a',
+              color: '#b45309',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Clock size={22} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#92400e' }}>
+                {isHindi ? 'संस्था/आश्रम पंजीकरण सत्यापन प्रक्रियाधीन' : 'Ashram / NGO Registration Under Review'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: '2px' }}>
+                {isHindi
+                  ? 'आपका पंजीकरण आवेदन प्राप्त हो गया है। खाद्य सुरक्षा अधिकारी द्वारा सत्यापन उपरांत स्वचालित भोजन दावा सुविधा सक्रिय होगी।'
+                  : 'Your organization application is received. Live food matching and distribution allocation will activate once verified by district authority.'}
+              </div>
+            </div>
+          </div>
+          <span className="badge badge-amber" style={{ fontSize: '0.76rem', fontWeight: 800 }}>
+            {isHindi ? 'समीक्षाधीन (Under Review)' : 'Under Review'}
+          </span>
+        </div>
+      )}
+
       {/* NGO Header */}
       <div className="glass-panel" style={{
         padding: '24px',

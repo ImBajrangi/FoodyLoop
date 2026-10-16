@@ -34,12 +34,35 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
   const t = TRANSLATIONS[state.language];
 
   const currentShop = state.shops.find(s => s.id === state.activeShopId) || state.shops[0];
-  const [activeTab, setActiveTab] = useState<TabType>('analytics');
 
   const shopDonations = state.donations.filter(d => 
     (currentShop && d.donorShopId === currentShop.id) || 
     (currentShop && d.donorShopName?.toLowerCase() === currentShop.name?.toLowerCase())
   );
+
+  // If this shop doesn't have its own listed donations yet, show all active donations so shopkeeper always has access to live handover OTP
+  const displayedDonations = shopDonations.length > 0 ? shopDonations : state.donations;
+
+  const pendingHandoverDonations = displayedDonations.filter(d => 
+    d.status === 'MATCHED' || d.status === 'PICKUP_ASSIGNED' || d.status === 'COLLECTED'
+  );
+  const availableDonations = displayedDonations.filter(d => d.status === 'AVAILABLE');
+
+  // Default to donations tab if an NGO has claimed food and is waiting for OTP handover
+  const [activeTab, setActiveTab] = useState<TabType>(() => 
+    pendingHandoverDonations.length > 0 ? 'donations' : 'analytics'
+  );
+  const [copiedOtp, setCopiedOtp] = useState<string | null>(null);
+
+  const handleCopyOtp = (code: string) => {
+    try {
+      navigator.clipboard.writeText(code);
+      setCopiedOtp(code);
+      setTimeout(() => setCopiedOtp(null), 3000);
+    } catch {
+      // clipboard fallback
+    }
+  };
 
   if (!currentShop) {
     return (
@@ -229,6 +252,161 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
       </div>
 
 
+      {/* 🚨 PROMINENT HANDOVER OTP ALERT BANNER (Visible on All Tabs) */}
+      {pendingHandoverDonations.length > 0 ? (
+        <div style={{
+          backgroundColor: '#f0fdf4',
+          border: '2.5px solid #22c55e',
+          borderRadius: '18px',
+          boxShadow: '0 6px 20px rgba(34, 197, 94, 0.18)',
+          padding: '20px 24px',
+          marginBottom: '22px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1, minWidth: '280px' }}>
+              <div style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '14px',
+                backgroundColor: '#dcfce7',
+                border: '2px solid #86efac',
+                color: '#15803d',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <KeyRound size={28} />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    fontSize: '0.72rem',
+                    fontWeight: 900,
+                    padding: '3px 9px',
+                    borderRadius: '20px',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {isHindi ? '⚡ लाइव पिकअप चालू' : '⚡ LIVE PICKUP ACTIVE'}
+                  </span>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#14532d', margin: 0 }}>
+                    {isHindi ? 'भोजन हैंडओवर ओटीपी (Handover OTP)' : 'Food Handover OTP for Ashram'}
+                  </h3>
+                </div>
+
+                <p style={{ fontSize: '0.86rem', color: '#166534', marginTop: '6px', marginBottom: '8px', lineHeight: 1.4 }}>
+                  {isHindi
+                    ? 'आश्रम प्रतिनिधि / राइडर भोजन लेने आ रहे हैं। उन्हें नीचे दिया गया 4-अंकीय ओटीपी दें ताकि वे अपने ऐप में भरकर हैंडओवर कन्फर्म कर सकें:'
+                    : 'Ashram courier is arriving. Give them this 4-digit OTP so they can enter it in their app to verify collection:'}
+                </p>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '0.82rem', color: '#334155' }}>
+                  <span><strong>{isHindi ? 'व्यंजन:' : 'Dish:'}</strong> {pendingHandoverDonations[0].foodItem} ({pendingHandoverDonations[0].quantity} {pendingHandoverDonations[0].unit})</span>
+                  <span>•</span>
+                  <span><strong>{isHindi ? 'आश्रम:' : 'Ashram:'}</strong> {pendingHandoverDonations[0].targetBeneficiaryName || pendingHandoverDonations[0].matchedNgoName || 'श्री राधा रानी आश्रम'}</span>
+                  <span>•</span>
+                  <span><strong>{isHindi ? 'सेवादार:' : 'Courier:'}</strong> {pendingHandoverDonations[0].assignedVolunteerName || 'पिकअप राइडर'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Huge Clickable/Copyable OTP Box */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <div
+                onClick={() => handleCopyOtp(pendingHandoverDonations[0].otpCode || '4928')}
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '3px dashed #22c55e',
+                  boxShadow: '0 4px 14px rgba(34, 197, 94, 0.25)',
+                  borderRadius: '16px',
+                  padding: '12px 28px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease'
+                }}
+                title={isHindi ? 'क्लिक करके कॉपी करें' : 'Click to copy OTP'}
+              >
+                <div style={{ fontSize: '0.7rem', fontWeight: 900, color: '#15803d', letterSpacing: '1px' }}>
+                  {isHindi ? 'हैंडओवर ओटीपी' : 'HANDOVER OTP'}
+                </div>
+                <div style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '2.5rem',
+                  fontWeight: 900,
+                  letterSpacing: '8px',
+                  color: '#15803d',
+                  lineHeight: 1.1,
+                  margin: '4px 0'
+                }}>
+                  {pendingHandoverDonations[0].otpCode || '4928'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>
+                  {copiedOtp === (pendingHandoverDonations[0].otpCode || '4928') ? (isHindi ? '✓ कॉपी हो गया!' : '✓ Copied!') : (isHindi ? 'क्लिक करके कॉपी करें' : 'Click to copy')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : availableDonations.length > 0 ? (
+        <div style={{
+          backgroundColor: '#eff6ff',
+          border: '2px solid #93c5fd',
+          borderRadius: '16px',
+          padding: '14px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '12px', backgroundColor: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <KeyRound size={22} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#1e40af' }}>
+                {isHindi ? 'भोजन दान आश्रमों के लिए उपलब्ध है' : 'Food Donation Available for Ashrams'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#3b82f6', marginTop: '2px' }}>
+                {isHindi
+                  ? `${availableDonations[0].foodItem} (${availableDonations[0].quantity} ${availableDonations[0].unit}) - जैसे ही आश्रम दावा करेगा, यही ओटीपी देना होगा:`
+                  : `${availableDonations[0].foodItem} - Once claimed, give this pre-assigned OTP to courier:`}
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            backgroundColor: '#ffffff',
+            border: '2px dashed #3b82f6',
+            borderRadius: '12px',
+            padding: '6px 20px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#1d4ed8' }}>
+              {isHindi ? 'पूर्व-आवंटित ओटीपी' : 'PRE-ASSIGNED OTP'}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.7rem', fontWeight: 900, letterSpacing: '6px', color: '#1d4ed8' }}>
+              {availableDonations[0].otpCode || '4928'}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* 3 Intuitive Category Tabs */}
       <div style={{
         display: 'flex',
@@ -283,7 +461,7 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
         >
           <Clock size={18} />
           <span>{isHindi ? 'भोजन दान व पिकअप' : 'Live Donations & Pickups'}</span>
-          {shopDonations.length > 0 && (
+          {displayedDonations.length > 0 && (
             <span style={{
               backgroundColor: activeTab === 'donations' ? '#1cb0f6' : '#e2e8f0',
               color: activeTab === 'donations' ? '#ffffff' : '#475569',
@@ -292,7 +470,7 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
               fontSize: '0.74rem',
               fontWeight: 900
             }}>
-              {shopDonations.length}
+              {displayedDonations.length}
             </span>
           )}
         </button>
@@ -333,7 +511,7 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
       {/* TAB 2: ACTIVE DONATIONS & OTP HANDOVER */}
       {activeTab === 'donations' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {shopDonations.length === 0 ? (
+          {displayedDonations.length === 0 ? (
             <div className="glass-panel" style={{ padding: '36px', textAlign: 'center', backgroundColor: '#ffffff', borderRadius: '16px' }}>
               <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
                 {isHindi ? 'वर्तमान में कोई सक्रिय भोजन दान नहीं है।' : 'No active food donations right now.'}
@@ -344,7 +522,7 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
               </button>
             </div>
           ) : (
-            shopDonations.map(d => {
+            displayedDonations.map(d => {
               const isMatched = d.status === 'MATCHED' || d.status === 'PICKUP_ASSIGNED';
               const isCollected = d.status === 'COLLECTED';
               const isDelivered = d.status === 'DELIVERED';
@@ -412,68 +590,104 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
                     </div>
                   </div>
 
-                  {/* Shop Handover OTP Display Card when Matched */}
-                  {isMatched && (
+                  {/* Shop Handover OTP Display Card - ALWAYS VISIBLE FOR HANDOVER VERIFICATION */}
+                  {(d.status === 'MATCHED' || d.status === 'PICKUP_ASSIGNED' || d.status === 'COLLECTED' || d.status === 'AVAILABLE') && (
                     <div style={{
-                      backgroundColor: '#f0fdf4',
-                      border: '2px solid #22c55e',
-                      borderRadius: '12px',
-                      padding: '16px',
+                      backgroundColor: d.status === 'AVAILABLE' ? '#eff6ff' : '#f0fdf4',
+                      border: d.status === 'AVAILABLE' ? '2px solid #60a5fa' : '2px solid #22c55e',
+                      borderRadius: '14px',
+                      padding: '16px 20px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       flexWrap: 'wrap',
-                      gap: '14px'
+                      gap: '14px',
+                      marginTop: '12px'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <KeyRound size={22} color="#16a34a" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '240px' }}>
+                        <div style={{
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '12px',
+                          backgroundColor: d.status === 'AVAILABLE' ? '#dbeafe' : '#dcfce7',
+                          color: d.status === 'AVAILABLE' ? '#2563eb' : '#16a34a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <KeyRound size={24} />
                         </div>
                         <div>
-                          <div style={{ fontWeight: 800, color: '#166534', fontSize: '0.96rem' }}>
-                            {isHindi ? 'आपका सुरक्षित हैंडओवर ओटीपी (Handover OTP):' : 'Your Secure Handover OTP:'}
+                          <div style={{ fontWeight: 800, color: d.status === 'AVAILABLE' ? '#1e40af' : '#166534', fontSize: '1rem' }}>
+                            {d.status === 'AVAILABLE'
+                              ? (isHindi ? 'पूर्व-आवंटित पिकअप ओटीपी (Pre-Assigned OTP):' : 'Pre-Assigned Pickup OTP:')
+                              : (isHindi ? 'आपका सुरक्षित हैंडओवर ओटीपी (Handover OTP):' : 'Your Secure Handover OTP:')}
                           </div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                            {isHindi ? 'जब एनजीओ प्रतिनिधि / राइडर भोजन लेने आएं, उन्हें यह 4-अंकीय ओटीपी दें। वे इसे अपने ऐप में भरकर हैंडओवर कन्फर्म करेंगे।' : 'Share this 4-digit code with the arriving NGO / rider. They will enter it in their app to confirm handover.'}
+                          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                            {isHindi
+                              ? 'जब एनजीओ प्रतिनिधि / राइडर भोजन लेने आएं, उन्हें यह 4-अंकीय ओटीपी दें। वे इसे अपने ऐप में भरकर हैंडओवर कन्फर्म करेंगे।'
+                              : 'Share this 4-digit code with the arriving NGO / rider. They will enter it in their app to confirm handover.'}
                           </div>
                         </div>
                       </div>
 
-                      <div style={{
-                        backgroundColor: '#ffffff',
-                        border: '2px dashed #22c55e',
-                        padding: '8px 24px',
-                        borderRadius: '12px',
-                        textAlign: 'center',
-                        boxShadow: '0 2px 4px rgba(34, 197, 94, 0.1)'
-                      }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      <div
+                        onClick={() => handleCopyOtp(d.otpCode || '4928')}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: d.status === 'AVAILABLE' ? '2.5px dashed #3b82f6' : '2.5px dashed #22c55e',
+                          padding: '10px 24px',
+                          borderRadius: '14px',
+                          textAlign: 'center',
+                          boxShadow: '0 3px 8px rgba(0,0,0,0.06)',
+                          cursor: 'pointer'
+                        }}
+                        title={isHindi ? 'क्लिक करके कॉपी करें' : 'Click to copy OTP'}
+                      >
+                        <div style={{ fontSize: '0.7rem', fontWeight: 900, color: d.status === 'AVAILABLE' ? '#1d4ed8' : '#15803d', textTransform: 'uppercase', letterSpacing: '1px' }}>
                           {isHindi ? 'पिकअप कोड' : 'PICKUP CODE'}
                         </div>
                         <div style={{
                           fontFamily: 'var(--font-mono)',
-                          fontSize: '1.8rem',
+                          fontSize: '2rem',
                           fontWeight: 900,
                           letterSpacing: '6px',
-                          color: '#15803d'
+                          color: d.status === 'AVAILABLE' ? '#1d4ed8' : '#15803d',
+                          margin: '2px 0'
                         }}>
                           {d.otpCode || '4928'}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
+                          {copiedOtp === (d.otpCode || '4928') ? (isHindi ? '✓ कॉपी हुआ!' : '✓ Copied!') : (isHindi ? 'क्लिक करें' : 'Click to copy')}
                         </div>
                       </div>
                     </div>
                   )}
 
                   {isCollected && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1899d6', fontWeight: 800, fontSize: '0.9rem' }}>
-                      <CheckCircle2 size={20} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1899d6', fontWeight: 800, fontSize: '0.88rem', marginTop: '10px' }}>
+                      <CheckCircle2 size={18} />
                       <span>{isHindi ? 'भोजन सेवादार को सौंप दिया गया है, आश्रम तक मार्गस्थ है।' : 'Food successfully handed over to courier, en route to Ashram.'}</span>
                     </div>
                   )}
 
                   {isDelivered && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#388e00', fontWeight: 800, fontSize: '0.9rem' }}>
-                      <CheckCircle2 size={20} />
-                      <span>{isHindi ? 'आश्रम में भोजन सफलतापूर्वक वितरित कर दिया गया है। धन्यवाद!' : 'Food delivered successfully to Ashram elders. Thank you!'}</span>
+                    <div style={{
+                      backgroundColor: '#f0fdf4',
+                      border: '1.5px solid #86efac',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#15803d',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      marginTop: '10px'
+                    }}>
+                      <CheckCircle2 size={18} color="#16a34a" />
+                      <span>{isHindi ? `आश्रम में भोजन सफलतापूर्वक वितरित व सत्यापित (ओटीपी: ${d.otpCode || '4928'})` : `Food delivered and verified successfully (OTP: ${d.otpCode || '4928'})`}</span>
                     </div>
                   )}
                 </div>

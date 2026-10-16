@@ -97,6 +97,7 @@ export const QuickDonateModal: React.FC<QuickDonateModalProps> = ({ isOpen, onCl
       targetBeneficiaryName: 'श्री राधा रानी विधवा व वृद्ध आश्रम (वृन्दावन)',
       distanceKm: 1.8,
       estimatedTravelTimeMin: 12,
+      otpCode: Math.floor(1000 + Math.random() * 9000).toString(),
       createdAt: new Date().toISOString()
     };
 

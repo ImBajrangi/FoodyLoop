@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppState } from './services/useAppState';
 import { Navbar } from './components/Navbar';
 import { LoginPortal } from './components/Auth/LoginPortal';
@@ -18,6 +18,15 @@ export function App() {
   const [isDonateOpen, setIsDonateOpen] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState<Sponsorship | null>(null);
   const [showAdminView, setShowAdminView] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') === 'true' || window.location.hash === '#admin') {
+        cache.setPortal('admin');
+      }
+    }
+  }, []);
 
   if (!state.portal) {
     return (

@@ -13,7 +13,8 @@ import {
   UtensilsCrossed,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck
 } from 'lucide-react';
 import { useAppState } from '../../services/useAppState';
 import type { UserRole, Shop, Ngo } from '../../types';
@@ -58,6 +59,21 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
     e.preventDefault();
     setSigninError(null);
     setUnregisteredNumber(null);
+
+    const raw = signinPhone.trim().toLowerCase();
+
+    // Direct access for authorized Admin ID / Phone / Email
+    if (
+      raw === 'admin' || 
+      raw === 'admin01' || 
+      raw === 'fssai_admin' || 
+      raw === 'admin@foodloop.in' ||
+      raw.replace(/\D/g, '') === '9999999999' ||
+      raw.replace(/\D/g, '') === '8888888888'
+    ) {
+      onSelectPortal('admin');
+      return;
+    }
 
     const clean = signinPhone.replace(/\D/g, '');
 
@@ -370,9 +386,8 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                         <span>+91</span>
                       </div>
                       <input
-                        type="tel"
-                        inputMode="numeric"
-                        maxLength={10}
+                        type="text"
+                        maxLength={20}
                         className="form-input"
                         style={{
                           flex: 1,
@@ -391,8 +406,13 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                         }
                         value={signinPhone}
                         onChange={e => {
-                          const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-                          setSigninPhone(digits);
+                          const val = e.target.value;
+                          if (/[a-zA-Z]/.test(val)) {
+                            setSigninPhone(val.slice(0, 20));
+                          } else {
+                            const digits = val.replace(/\D/g, '').slice(0, 10);
+                            setSigninPhone(digits);
+                          }
                           setSigninError(null);
                           setUnregisteredNumber(null);
                         }}

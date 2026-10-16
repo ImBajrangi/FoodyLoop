@@ -12,7 +12,6 @@ import {
   AlertCircle,
   Plus,
   KeyRound,
-  ArrowRight,
   UtensilsCrossed,
   Layers
 } from 'lucide-react';
@@ -36,9 +35,6 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
 
   const currentShop = state.shops.find(s => s.id === state.activeShopId) || state.shops[0];
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
-  const [enteredOtp, setEnteredOtp] = useState<{ [key: string]: string }>({});
-  const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
-  const [otpErrorMessage, setOtpErrorMessage] = useState<{ [key: string]: string | null }>({});
 
   const shopDonations = state.donations.filter(d => 
     (currentShop && d.donorShopId === currentShop.id) || 
@@ -68,41 +64,6 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
       </div>
     );
   }
-
-  const handleVerifyOtp = (donationId: string) => {
-    const targetDonation = shopDonations.find(d => d.id === donationId);
-    const code = (enteredOtp[donationId] || '').trim();
-    const expectedOtp = (targetDonation?.otpCode || '4928').trim();
-
-    if (!code || code.length < 4) {
-      setOtpErrorMessage(prev => ({
-        ...prev,
-        [donationId]: isHindi ? 'कृपया सेवादार से 4-अंकीय ओटीपी प्राप्त कर दर्ज करें।' : 'Please enter the 4-digit OTP provided by courier.'
-      }));
-      return;
-    }
-
-    if (code !== expectedOtp && code.length !== 4) {
-      setOtpErrorMessage(prev => ({
-        ...prev,
-        [donationId]: isHindi
-          ? 'गलत ओटीपी! सेवादार द्वारा दिया गया ओटीपी मेल नहीं खा रहा है। कृपया पुनः जांचें।'
-          : 'Incorrect OTP! Code does not match courier credentials. Please verify with courier.'
-      }));
-      return;
-    }
-
-    setOtpErrorMessage(prev => ({ ...prev, [donationId]: null }));
-    cache.updateDonationStatus(donationId, 'COLLECTED', {
-      collectedAt: new Date().toISOString()
-    });
-    setOtpSuccessMessage(
-      isHindi
-        ? `ओटीपी ${code} सत्यापित! भोजन सेवादार को सौंप दिया गया है, आश्रम तक मार्गस्थ है।`
-        : `OTP ${code} verified! Food successfully handed over to courier, en route to Ashram.`
-    );
-    setTimeout(() => setOtpSuccessMessage(null), 5000);
-  };
 
   return (
     <div>
@@ -267,24 +228,6 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
         </div>
       </div>
 
-      {/* Success notification if OTP verified */}
-      {otpSuccessMessage && (
-        <div style={{
-          backgroundColor: '#e8fcd9',
-          border: '2px solid #a5ed6e',
-          borderRadius: '12px',
-          padding: '14px 18px',
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          color: '#388e00',
-          fontWeight: 800
-        }}>
-          <CheckCircle2 size={20} />
-          <span>{otpSuccessMessage}</span>
-        </div>
-      )}
 
       {/* 3 Intuitive Category Tabs */}
       <div style={{
@@ -469,80 +412,53 @@ export const ShopHome: React.FC<ShopHomeProps> = ({ onOpenDonate }) => {
                     </div>
                   </div>
 
-                  {/* Inline OTP Verification Box when Matched */}
+                  {/* Shop Handover OTP Display Card when Matched */}
                   {isMatched && (
                     <div style={{
-                      backgroundColor: '#fff4e5',
-                      border: '2px solid #ffc800',
+                      backgroundColor: '#f0fdf4',
+                      border: '2px solid #22c55e',
                       borderRadius: '12px',
                       padding: '16px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       flexWrap: 'wrap',
-                      gap: '12px'
+                      gap: '14px'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <KeyRound size={20} color="#c26900" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <KeyRound size={22} color="#16a34a" />
                         </div>
                         <div>
-                          <div style={{ fontWeight: 800, color: '#c26900', fontSize: '0.94rem' }}>
-                            {isHindi ? 'सेवादार से प्राप्त 4-अंकीय ओटीपी दर्ज करें:' : 'Verify Courier Pickup OTP:'}
+                          <div style={{ fontWeight: 800, color: '#166534', fontSize: '0.96rem' }}>
+                            {isHindi ? 'आपका सुरक्षित हैंडओवर ओटीपी (Handover OTP):' : 'Your Secure Handover OTP:'}
                           </div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                            {isHindi ? 'सेवादार जब दुकान पर पहुंचे तब उनसे 4-अंकीय ओटीपी पूछकर सत्यापित करें।' : 'Ask the arriving courier for their secret 4-digit code before handing over food.'}
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                            {isHindi ? 'जब एनजीओ प्रतिनिधि / राइडर भोजन लेने आएं, उन्हें यह 4-अंकीय ओटीपी दें। वे इसे अपने ऐप में भरकर हैंडओवर कन्फर्म करेंगे।' : 'Share this 4-digit code with the arriving NGO / rider. They will enter it in their app to confirm handover.'}
                           </div>
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <input
-                            type="text"
-                            maxLength={4}
-                            placeholder="• • • •"
-                            value={enteredOtp[d.id] || ''}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '');
-                              setEnteredOtp(prev => ({ ...prev, [d.id]: val }));
-                              if (otpErrorMessage[d.id]) {
-                                setOtpErrorMessage(prev => ({ ...prev, [d.id]: null }));
-                              }
-                            }}
-                            className="form-input"
-                            style={{
-                              width: '120px',
-                              height: '44px',
-                              textAlign: 'center',
-                              fontSize: '1.25rem',
-                              fontWeight: 900,
-                              letterSpacing: '4px',
-                              fontFamily: 'var(--font-mono)'
-                            }}
-                          />
-                          <button
-                            onClick={() => handleVerifyOtp(d.id)}
-                            className="btn btn-primary"
-                            style={{ minHeight: '44px', padding: '0 18px', fontSize: '0.88rem' }}
-                          >
-                            <span>{isHindi ? 'सत्यापित करें' : 'VERIFY & HANDOVER'}</span>
-                            <ArrowRight size={16} />
-                          </button>
+                      <div style={{
+                        backgroundColor: '#ffffff',
+                        border: '2px dashed #22c55e',
+                        padding: '8px 24px',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        boxShadow: '0 2px 4px rgba(34, 197, 94, 0.1)'
+                      }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          {isHindi ? 'पिकअप कोड' : 'PICKUP CODE'}
                         </div>
-                        {otpErrorMessage[d.id] && (
-                          <div style={{
-                            color: '#dc2626',
-                            fontSize: '0.76rem',
-                            fontWeight: 700,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            <AlertCircle size={14} />
-                            <span>{otpErrorMessage[d.id]}</span>
-                          </div>
-                        )}
+                        <div style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '1.8rem',
+                          fontWeight: 900,
+                          letterSpacing: '6px',
+                          color: '#15803d'
+                        }}>
+                          {d.otpCode || '4928'}
+                        </div>
                       </div>
                     </div>
                   )}

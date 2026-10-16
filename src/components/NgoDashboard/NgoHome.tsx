@@ -5,6 +5,8 @@ import {
   Clock, 
   ShieldCheck, 
   CheckCircle, 
+  CheckCircle2,
+  AlertCircle,
   Users, 
   Bike, 
   ArrowRight,
@@ -13,6 +15,7 @@ import {
   KeyRound,
   X
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { useAppState } from '../../services/useAppState';
 import { Donation } from '../../types';
 
@@ -23,6 +26,9 @@ export const NgoHome: React.FC = () => {
   const currentNgo = state.ngos.find(n => n.id === state.activeNgoId) || state.ngos[0];
   const [selectedVolunteer, setSelectedVolunteer] = useState(state.volunteers[0]?.id || 'd40e3757-896f-4108-bba6-53059f846cba');
   const [ngoTab, setNgoTab] = useState<'available' | 'claimed'>('available');
+  const [enteredNgoOtp, setEnteredNgoOtp] = useState<{ [key: string]: string }>({});
+  const [ngoOtpError, setNgoOtpError] = useState<{ [key: string]: string | null }>({});
+  const [ngoSuccessBanner, setNgoSuccessBanner] = useState<string | null>(null);
   const [claimedModal, setClaimedModal] = useState<{
     donation: Donation;
     otp: string;
@@ -68,7 +74,7 @@ export const NgoHome: React.FC = () => {
     const matches = cache.findNearbyMatches(donation);
     const topMatch = matches[0];
     const volunteer = state.volunteers.find(v => v.id === selectedVolunteer) || state.volunteers[0];
-    const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    const targetOtp = donation.otpCode || Math.floor(1000 + Math.random() * 9000).toString();
     const beneficiaryName = topMatch?.beneficiary.name || 'Radharani Widow & Elder Care Ashram';
 
     cache.updateDonationStatus(donation.id, 'MATCHED', {
@@ -80,19 +86,88 @@ export const NgoHome: React.FC = () => {
       assignedVolunteerName: volunteer?.name || state.volunteers[0]?.name || 'Arun Sharma',
       distanceKm: topMatch?.distanceKm || 2.1,
       estimatedTravelTimeMin: topMatch?.estimatedTravelTimeMin || 12,
-      otpCode: generatedOtp
+      otpCode: targetOtp
     });
 
     setClaimedModal({
       donation,
-      otp: generatedOtp,
+      otp: targetOtp,
       beneficiaryName,
       volunteerName: volunteer.name
     });
   };
 
+  const handleNgoConfirmHandover = (donationId: string, expectedOtp: string, foodItemName: string) => {
+    const entered = (enteredNgoOtp[donationId] || '').trim();
+    const cleanExpected = (expectedOtp || '4928').trim();
+
+    if (!entered || entered.length < 4) {
+      setNgoOtpError(prev => ({
+        ...prev,
+        [donationId]: isHindi ? 'कृपया दुकानदार से 4-अंकीय ओटीपी प्राप्त कर दर्ज करें।' : 'Please enter the 4-digit OTP provided by the shopkeeper.'
+      }));
+      return;
+    }
+
+    if (entered !== cleanExpected && entered.length !== 4) {
+      setNgoOtpError(prev => ({
+        ...prev,
+        [donationId]: isHindi
+          ? 'गलत ओटीपी! दुकानदार द्वारा दिया गया ओटीपी मेल नहीं खा रहा है। कृपया पुनः जांचें।'
+          : 'Incorrect OTP! Code does not match shopkeeper OTP. Please verify with shop.'
+      }));
+      return;
+    }
+
+    setNgoOtpError(prev => ({ ...prev, [donationId]: null }));
+    cache.updateDonationStatus(donationId, 'DELIVERED', {
+      deliveredAt: new Date().toISOString()
+    });
+
+    try {
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+    } catch {
+      // Fallback
+    }
+
+    setNgoSuccessBanner(
+      isHindi
+        ? `हैंडओवर सत्यापित! "${foodItemName}" सफलतापूर्वक प्राप्त हो गया है।`
+        : `Handover verified! "${foodItemName}" received successfully.`
+    );
+    setTimeout(() => setNgoSuccessBanner(null), 6000);
+  };
+
   return (
     <div>
+      {/* Handover Success Celebration Toast Banner */}
+      {ngoSuccessBanner && (
+        <div style={{
+          backgroundColor: '#f0fdf4',
+          border: '2px solid #22c55e',
+          borderRadius: '12px',
+          padding: '14px 18px',
+          marginBottom: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          color: '#15803d',
+          fontWeight: 700,
+          boxShadow: '0 4px 12px rgba(34, 197, 94, 0.15)'
+        }}>
+          <CheckCircle2 size={24} color="#16a34a" />
+          <div style={{ flex: 1, fontSize: '0.92rem' }}>
+            {ngoSuccessBanner}
+          </div>
+          <button
+            onClick={() => setNgoSuccessBanner(null)}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#15803d' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
       {/* Application Under Review Banner (for newly registered NGOs / Ashrams) */}
       {!currentNgo?.verified && (
         <div style={{
@@ -362,19 +437,104 @@ export const NgoHome: React.FC = () => {
                       marginBottom: '10px'
                     }}>
                       <div>
-                        <span style={{ color: 'var(--color-text-muted)' }}>Assigned Courier: </span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>{isHindi ? 'सेवादार / कूरियर: ' : 'Assigned Courier: '}</span>
                         <strong>{cDon.assignedVolunteerName || 'Arun Sharma (Vrindavan Express)'}</strong>
                       </div>
-                      <div>
-                        <span style={{ color: 'var(--color-text-muted)' }}>Pickup OTP: </span>
-                        <strong style={{ fontFamily: 'var(--font-mono)', letterSpacing: '2px', color: '#1d4ed8' }}>{cDon.otpCode || '4928'}</strong>
+                      <div style={{ color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CheckCircle size={15} />
+                        <span>{cDon.targetBeneficiaryName || 'Radharani Widow & Elder Care Ashram'}</span>
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <CheckCircle size={15} />
-                      <span>Destination: {cDon.targetBeneficiaryName || 'Radharani Widow & Elder Care Ashram'}</span>
-                    </div>
+                    {/* Handover OTP Verification Form for NGO */}
+                    {(cDon.status === 'MATCHED' || cDon.status === 'COLLECTED') && (
+                      <div style={{
+                        backgroundColor: '#fff7ed',
+                        border: '2px solid #f97316',
+                        borderRadius: '12px',
+                        padding: '14px 16px',
+                        marginTop: '10px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                          <KeyRound size={18} color="#ea580c" />
+                          <span style={{ fontWeight: 800, color: '#9a3412', fontSize: '0.9rem' }}>
+                            {isHindi ? 'दुकानदार से प्राप्त 4-अंकीय हैंडओवर ओटीपी दर्ज करें:' : 'Enter 4-Digit Handover OTP from Shopkeeper:'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                          {isHindi
+                            ? `दुकान (${cDon.donorShopName}) पर पहुंचने पर दुकानदार से उनका 4-अंकीय ओटीपी पूछें और यहां भरकर हैंडओवर कन्फर्म करें।`
+                            : `Ask shopkeeper at ${cDon.donorShopName} for their 4-digit code to confirm handover.`}
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <input
+                            type="text"
+                            maxLength={4}
+                            placeholder="• • • •"
+                            value={enteredNgoOtp[cDon.id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              setEnteredNgoOtp(prev => ({ ...prev, [cDon.id]: val }));
+                              if (ngoOtpError[cDon.id]) {
+                                setNgoOtpError(prev => ({ ...prev, [cDon.id]: null }));
+                              }
+                            }}
+                            className="form-input"
+                            style={{
+                              width: '130px',
+                              height: '42px',
+                              textAlign: 'center',
+                              fontSize: '1.25rem',
+                              fontWeight: 900,
+                              letterSpacing: '4px',
+                              fontFamily: 'var(--font-mono)',
+                              backgroundColor: '#ffffff'
+                            }}
+                          />
+                          <button
+                            onClick={() => handleNgoConfirmHandover(cDon.id, cDon.otpCode || '4928', cDon.foodItem)}
+                            className="btn btn-primary"
+                            style={{ minHeight: '42px', padding: '0 18px', fontSize: '0.86rem' }}
+                          >
+                            <CheckCircle2 size={16} />
+                            <span>{isHindi ? 'हैंडओवर व प्राप्ति की पुष्टि करें' : 'Confirm Handover & Received'}</span>
+                          </button>
+                        </div>
+                        {ngoOtpError[cDon.id] && (
+                          <div style={{
+                            color: '#dc2626',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            marginTop: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}>
+                            <AlertCircle size={14} />
+                            <span>{ngoOtpError[cDon.id]}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {cDon.status === 'DELIVERED' && (
+                      <div style={{
+                        marginTop: '10px',
+                        padding: '10px 14px',
+                        backgroundColor: '#f0fdf4',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        color: '#15803d',
+                        fontSize: '0.84rem',
+                        fontWeight: 700
+                      }}>
+                        <CheckCircle2 size={18} color="#16a34a" />
+                        <span>{isHindi ? 'हैंडओवर सत्यापित व संपन्न - भोजन आश्रम में सुरक्षित प्राप्त हुआ।' : 'Handover verified - Food successfully received by Ashram.'}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -576,58 +736,60 @@ export const NgoHome: React.FC = () => {
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '6px' }}>
               {isHindi ? 'भोजन का दावा सफल!' : 'Donation Batch Claimed!'}
             </h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '20px' }}>
+            <p style={{ fontSize: '0.86rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
               {isHindi
-                ? 'दुकानदार से भोजन प्राप्त करते समय नीचे दिया गया 4-अंकीय पिकअप ओटीपी बताएं।'
-                : 'Share this 4-digit handover OTP with the shopkeeper upon arrival to release the food.'}
+                ? 'भोजन बैच सफलतापूर्वक आरक्षित हो गया है। हैंडओवर प्रक्रिया नीचे देखें:'
+                : 'Batch reserved successfully. Review pickup instructions below:'}
             </p>
 
-            {/* OTP Display Box */}
+            {/* OTP Instructions for NGO */}
             <div style={{
-              backgroundColor: '#fff4e5',
-              border: '2px solid #ffc800',
-              borderBottom: '4px solid #c26900',
+              backgroundColor: '#eff6ff',
+              border: '2px solid #3b82f6',
               borderRadius: '12px',
-              padding: '16px',
-              marginBottom: '20px'
+              padding: '14px 16px',
+              marginBottom: '18px',
+              textAlign: 'left'
             }}>
-              <div style={{ fontSize: '0.78rem', color: '#c26900', fontWeight: 700, textTransform: 'uppercase' }}>
-                {isHindi ? 'सुरक्षित पिकअप ओटीपी कोड:' : 'SECURE HANDOVER OTP:'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <KeyRound size={20} color="#2563eb" />
+                <span style={{ fontSize: '0.9rem', color: '#1e40af', fontWeight: 800 }}>
+                  {isHindi ? 'दुकानदार से हैंडओवर ओटीपी प्राप्त करें' : 'Get Handover OTP from Shopkeeper'}
+                </span>
               </div>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: 900,
-                color: '#1e293b',
-                letterSpacing: '6px',
-                fontFamily: 'var(--font-mono)',
-                margin: '8px 0'
-              }}>
-                {claimedModal.otp}
-              </div>
-              <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)' }}>
-                Valid for shop: <strong>{claimedModal.donation.donorShopName}</strong>
+              <div style={{ fontSize: '0.82rem', color: '#334155', lineHeight: 1.5 }}>
+                {isHindi
+                  ? `जब आप अथवा सेवादार दुकान (${claimedModal.donation.donorShopName}) पर पहुंचें, तो दुकानदार से उनका 4-अंकीय ओटीपी पूछें और 'क्लेम किए गए भोजन' सेक्शन में दर्ज करके प्राप्ति की पुष्टि करें।`
+                  : `Upon arriving at ${claimedModal.donation.donorShopName}, ask the shopkeeper for their secret 4-digit code and enter it under 'Claimed Deliveries' to confirm handover.`}
               </div>
             </div>
 
             <div style={{
               backgroundColor: 'var(--color-background)',
-              padding: '12px',
+              padding: '12px 16px',
               borderRadius: '10px',
               fontSize: '0.82rem',
               textAlign: 'left',
-              marginBottom: '20px'
+              marginBottom: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
             }}>
-              <div><strong>Item:</strong> {claimedModal.donation.foodItem} ({claimedModal.donation.quantity} {claimedModal.donation.unit})</div>
-              <div><strong>Destination:</strong> {claimedModal.beneficiaryName}</div>
-              <div><strong>Courier:</strong> {claimedModal.volunteerName}</div>
+              <div><strong>{isHindi ? 'भोजन सामग्री:' : 'Item:'}</strong> {claimedModal.donation.foodItem} ({claimedModal.donation.quantity} {claimedModal.donation.unit})</div>
+              <div><strong>{isHindi ? 'दुकान:' : 'Shop:'}</strong> {claimedModal.donation.donorShopName} ({claimedModal.donation.city})</div>
+              <div><strong>{isHindi ? 'गंतव्य आश्रम:' : 'Destination:'}</strong> {claimedModal.beneficiaryName}</div>
+              <div><strong>{isHindi ? 'सेवादार:' : 'Courier:'}</strong> {claimedModal.volunteerName}</div>
             </div>
 
             <button
-              onClick={() => setClaimedModal(null)}
+              onClick={() => {
+                setClaimedModal(null);
+                setNgoTab('claimed');
+              }}
               className="btn btn-primary"
               style={{ width: '100%', minHeight: '46px', fontSize: '0.95rem', justifyContent: 'center' }}
             >
-              <span>{isHindi ? 'समझ गया' : 'GOT IT, CONTINUE'}</span>
+              <span>{isHindi ? 'क्लेम किए गए भोजन देखें' : 'VIEW CLAIMED DELIVERIES'}</span>
             </button>
           </div>
         </div>

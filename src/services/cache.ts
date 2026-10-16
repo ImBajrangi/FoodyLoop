@@ -103,12 +103,34 @@ class CacheService {
   }
 
   private loadInitial(): AppCacheState {
+    let restoredSession: { portal: PortalType; role: UserRole; activeShopId?: string; activeNgoId?: string } | null = null;
     try {
       if (typeof window !== 'undefined') {
-        const cached = localStorage.getItem(CACHE_KEY);
+        const sessionStr = localStorage.getItem('foodloop_session');
+        if (sessionStr) {
+          restoredSession = JSON.parse(sessionStr);
+        }
+      }
+    } catch {
+      // LocalStorage access failure fallback
+    }
+
+    try {
+      if (typeof window !== 'undefined') {
+        let cached = localStorage.getItem(CACHE_KEY);
+        if (!cached) {
+          cached = localStorage.getItem('foodloop_cache_v5') || localStorage.getItem('foodloop_cache_v4') || localStorage.getItem('foodloop_cache');
+        }
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed.version === 5) {
+          if (parsed && typeof parsed === 'object') {
+            parsed.version = 6;
+            if (restoredSession?.portal) {
+              parsed.portal = restoredSession.portal;
+              parsed.role = restoredSession.role || parsed.role;
+              if (restoredSession.activeShopId) parsed.activeShopId = restoredSession.activeShopId;
+              if (restoredSession.activeNgoId) parsed.activeNgoId = restoredSession.activeNgoId;
+            }
             return parsed;
           }
         }
@@ -119,11 +141,11 @@ class CacheService {
 
     const defaultState: AppCacheState = {
       version: 6,
-      portal: null,
-      role: 'shop',
+      portal: restoredSession?.portal || null,
+      role: restoredSession?.role || 'shop',
       language: 'en',
-      activeShopId: 'ff22da9a-2623-4387-af37-6a8bb50bb19f',
-      activeNgoId: '09afa3ca-3498-4446-96f0-5b566ebdeb53',
+      activeShopId: restoredSession?.activeShopId || 'ff22da9a-2623-4387-af37-6a8bb50bb19f',
+      activeNgoId: restoredSession?.activeNgoId || '09afa3ca-3498-4446-96f0-5b566ebdeb53',
       shops: INITIAL_SHOPS,
       ngos: INITIAL_NGOS,
       beneficiaries: INITIAL_BENEFICIARIES,
@@ -147,6 +169,14 @@ class CacheService {
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+        if (state.portal) {
+          localStorage.setItem('foodloop_session', JSON.stringify({
+            portal: state.portal,
+            role: state.role,
+            activeShopId: state.activeShopId,
+            activeNgoId: state.activeNgoId
+          }));
+        }
       }
     } catch {
       // Ignore quota errors
@@ -183,6 +213,7 @@ class CacheService {
   public resetToDefault() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem('foodloop_session');
     }
     this.state = {
       version: 6,
@@ -304,6 +335,22 @@ class CacheService {
       if (activeEntityId) this.state.activeNgoId = activeEntityId;
     } else if (portal === 'admin') {
       this.state.role = 'admin';
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        if (portal) {
+          localStorage.setItem('foodloop_session', JSON.stringify({
+            portal: this.state.portal,
+            role: this.state.role,
+            activeShopId: this.state.activeShopId,
+            activeNgoId: this.state.activeNgoId
+          }));
+        } else {
+          localStorage.removeItem('foodloop_session');
+        }
+      }
+    } catch {
+      // LocalStorage access failure fallback
     }
     dbSync.syncAuthForRole(this.state.role);
     this.notify();
@@ -492,6 +539,13 @@ class CacheService {
 
   public logout() {
     this.state.portal = null;
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('foodloop_session');
+      }
+    } catch {
+      // LocalStorage access failure fallback
+    }
     this.notify();
   }
 

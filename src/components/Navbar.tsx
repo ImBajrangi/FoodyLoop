@@ -8,7 +8,8 @@ import {
   Globe2,
   LogOut,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  KeyRound
 } from 'lucide-react';
 import { useAppState } from '../services/useAppState';
 
@@ -187,6 +188,44 @@ export const Navbar: React.FC<NavbarProps> = () => {
               </button>
             </div>
           )}
+          {state.portal === 'shop' && (() => {
+            const activeHandover = state.donations.find(d => 
+              d.status === 'MATCHED' || d.status === 'PICKUP_ASSIGNED' || d.status === 'COLLECTED'
+            ) || state.donations.find(d => d.status === 'AVAILABLE');
+
+            if (!activeHandover) return null;
+            return (
+              <div style={{
+                backgroundColor: '#f0fdf4',
+                border: '1.5px solid #22c55e',
+                borderRadius: '20px',
+                padding: '4px 12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#15803d',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                boxShadow: '0 2px 6px rgba(34, 197, 94, 0.15)'
+              }}>
+                <KeyRound size={14} color="#16a34a" />
+                <span>{isHindi ? 'पिकअप ओटीपी:' : 'Pickup OTP:'}</span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.96rem',
+                  letterSpacing: '2px',
+                  fontWeight: 900,
+                  color: '#166534',
+                  backgroundColor: '#ffffff',
+                  padding: '1px 6px',
+                  borderRadius: '6px',
+                  border: '1px dashed #22c55e'
+                }}>
+                  {activeHandover.otpCode || '4928'}
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right Controls: Language toggle & Change Portal button */}

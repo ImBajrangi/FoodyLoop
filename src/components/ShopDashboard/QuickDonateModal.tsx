@@ -64,6 +64,7 @@ export const QuickDonateModal: React.FC<QuickDonateModalProps> = ({ isOpen, onCl
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState<string>('4928');
 
   if (!isOpen) return null;
 
@@ -73,6 +74,9 @@ export const QuickDonateModal: React.FC<QuickDonateModalProps> = ({ isOpen, onCl
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(otp);
 
     const newDonation: Donation = {
       id: `DON-${Date.now().toString().slice(-4)}`,
@@ -97,7 +101,7 @@ export const QuickDonateModal: React.FC<QuickDonateModalProps> = ({ isOpen, onCl
       targetBeneficiaryName: 'श्री राधा रानी विधवा व वृद्ध आश्रम (वृन्दावन)',
       distanceKm: 1.8,
       estimatedTravelTimeMin: 12,
-      otpCode: Math.floor(1000 + Math.random() * 9000).toString(),
+      otpCode: otp,
       createdAt: new Date().toISOString()
     };
 
@@ -118,7 +122,7 @@ export const QuickDonateModal: React.FC<QuickDonateModalProps> = ({ isOpen, onCl
     setTimeout(() => {
       setSubmitted(false);
       onClose();
-    }, 1800);
+    }, 4500);
   };
 
   return (
@@ -230,6 +234,43 @@ export const QuickDonateModal: React.FC<QuickDonateModalProps> = ({ isOpen, onCl
                 ? 'आपका भोजन श्री राधा रानी आश्रम के लिए आरक्षित कर दिया गया है। सेवादार जल्द दुकान पर पहुँचकर भोजन ग्रहण करेंगे।'
                 : 'Your fresh meal donation has been safely matched with Shri Radharani Ashram. Courier dispatched!'}
             </p>
+
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '2px dashed #22c55e',
+              borderRadius: '16px',
+              padding: '14px 24px',
+              maxWidth: '300px',
+              margin: '18px auto 14px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#166534' }}>
+                {isHindi ? 'आपका सुरक्षित हैंडओवर ओटीपी:' : 'Your Secure Handover OTP:'}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '2.4rem',
+                fontWeight: 900,
+                letterSpacing: '8px',
+                color: '#15803d',
+                margin: '4px 0',
+                lineHeight: 1.1
+              }}>
+                {generatedOtp}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                {isHindi ? 'जब एनजीओ आए, उन्हें यह ओटीपी दें' : 'Provide this OTP to arriving NGO'}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-primary"
+              style={{ minHeight: '40px', padding: '0 24px', fontSize: '0.88rem', fontWeight: 800 }}
+            >
+              <span>{isHindi ? 'डैशबोर्ड पर ओटीपी देखें' : 'View OTP on Dashboard'}</span>
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

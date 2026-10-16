@@ -9,6 +9,7 @@ import { BirthdaySponsorship } from './components/DonorDashboard/BirthdaySponsor
 import { AdminControlRoom } from './components/AdminDashboard/AdminControlRoom';
 import { QuickDonateModal } from './components/ShopDashboard/QuickDonateModal';
 import { ImpactCertificateModal } from './components/common/ImpactCertificateModal';
+import { FoodyLoopChatbot } from './components/Chatbot/FoodyLoopChatbot';
 import type { Sponsorship } from './types';
 import { Heart, ShieldCheck, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
@@ -30,11 +31,14 @@ export function App() {
 
   if (!state.portal) {
     return (
-      <LoginPortal
-        onSelectPortal={(portal, id, role) => {
-          cache.setPortal(portal, id, role);
-        }}
-      />
+      <>
+        <LoginPortal
+          onSelectPortal={(portal, id, role) => {
+            cache.setPortal(portal, id, role);
+          }}
+        />
+        <FoodyLoopChatbot />
+      </>
     );
   }
 
@@ -96,6 +100,9 @@ export function App() {
         sponsorship={selectedCertificate}
         onClose={() => setSelectedCertificate(null)}
       />
+
+      {/* Global RAG AI Chatbot Assistant for All Users */}
+      <FoodyLoopChatbot />
 
       {/* Clean Streamlined Footer */}
       <footer style={{

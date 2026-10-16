@@ -382,10 +382,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     {signinRole === 'shop'
                       ? (isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number')
                       : signinRole === 'ngo'
-                      ? (isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number')
-                      : signinRole === 'volunteer'
-                      ? (isHindi ? 'सेवादार 10-अंकीय मोबाइल नंबर' : 'Volunteer 10-Digit Mobile Number')
-                      : (isHindi ? 'खाद्य सुरक्षा अधिकारी आईडी / मोबाइल' : 'Food Safety Officer ID or Admin Mobile')}
+                        ? (isHindi ? 'पंजीकृत 10-अंकीय मोबाइल नंबर' : 'Registered 10-Digit Mobile Number')
+                        : signinRole === 'volunteer'
+                          ? (isHindi ? 'सेवादार 10-अंकीय मोबाइल नंबर' : 'Volunteer 10-Digit Mobile Number')
+                          : (isHindi ? 'खाद्य सुरक्षा अधिकारी आईडी / मोबाइल' : 'Food Safety Officer ID or Admin Mobile')}
                   </label>
 
                   {signinRole === 'admin' ? (
@@ -443,8 +443,8 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                             signinRole === 'shop'
                               ? '98371 45290'
                               : signinRole === 'ngo'
-                              ? '98200 44102'
-                              : '98971 22340'
+                                ? '98200 44102'
+                                : '98971 22340'
                           }
                           value={signinPhone}
                           onChange={e => {
@@ -462,8 +462,8 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                           {signinRole === 'shop'
                             ? (isHindi ? 'या पंजीकृत दुकान चुनें (त्वरित चयन):' : 'Or quick select registered shop:')
                             : signinRole === 'ngo'
-                            ? (isHindi ? 'या पंजीकृत संस्था/आश्रम चुनें (त्वरित चयन):' : 'Or quick select registered NGO/Ashram:')
-                            : (isHindi ? 'या पंजीकृत सेवादार चुनें:' : 'Or quick select registered rider:')}
+                              ? (isHindi ? 'या पंजीकृत संस्था/आश्रम चुनें (त्वरित चयन):' : 'Or quick select registered NGO/Ashram:')
+                              : (isHindi ? 'या पंजीकृत सेवादार चुनें:' : 'Or quick select registered rider:')}
                         </div>
                         <select
                           className="form-input"
@@ -481,8 +481,8 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                             {signinRole === 'shop'
                               ? (isHindi ? '-- सूची से पंजीकृत दुकान चुनें --' : '-- Choose Registered Shop to Auto-fill --')
                               : signinRole === 'ngo'
-                              ? (isHindi ? '-- सूची से पंजीकृत आश्रम चुनें --' : '-- Choose Registered NGO to Auto-fill --')
-                              : (isHindi ? '-- सूची से सेवादार चुनें --' : '-- Choose Registered Rider to Auto-fill --')}
+                                ? (isHindi ? '-- सूची से पंजीकृत आश्रम चुनें --' : '-- Choose Registered NGO to Auto-fill --')
+                                : (isHindi ? '-- सूची से सेवादार चुनें --' : '-- Choose Registered Rider to Auto-fill --')}
                           </option>
                           {signinRole === 'shop' && state.shops.map(s => {
                             const raw = s.phone.replace(/\D/g, '').slice(-10);
@@ -637,10 +637,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     {signinRole === 'shop'
                       ? (isHindi ? 'दुकानदार डैशबोर्ड में लॉगिन करें' : 'Sign In as Shop Partner')
                       : signinRole === 'ngo'
-                      ? (isHindi ? 'आश्रम/एनजीओ हब में लॉगिन करें' : 'Sign In as NGO Hub')
-                      : signinRole === 'volunteer'
-                      ? (isHindi ? 'सेवादार कूरियर ऐप में लॉगिन करें' : 'Sign In as Volunteer')
-                      : (isHindi ? 'केंद्रीय कंट्रोल रूम में प्रवेश करें' : 'Sign In as FSSAI Admin')}
+                        ? (isHindi ? 'आश्रम/एनजीओ हब में लॉगिन करें' : 'Sign In as NGO Hub')
+                        : signinRole === 'volunteer'
+                          ? (isHindi ? 'सेवादार कूरियर ऐप में लॉगिन करें' : 'Sign In as Volunteer')
+                          : (isHindi ? 'केंद्रीय कंट्रोल रूम में प्रवेश करें' : 'Sign In as FSSAI Admin')}
                   </span>
                   <ArrowRight size={18} />
                 </button>
@@ -699,13 +699,13 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                 <div>
                   <div style={{ marginBottom: '16px' }}>
                     <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '8px' }}>
-                      {isHindi ? 'पंजीकरण प्रकार चुनें:' : 'Select Registration Category:'}
+                      Select Registration Category / पंजीकरण श्रेणी चुनें:
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
                       {[
-                        { id: 'shop', label: isHindi ? 'दुकानदार / हलवाई' : 'Shop / Restaurant', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
-                        { id: 'ngo', label: isHindi ? 'आश्रम / एनजीओ' : 'NGO / Ashram', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' },
-                        { id: 'volunteer', label: isHindi ? 'सेवादार (Courier)' : 'Volunteer Courier', icon: Bike, activeColor: '#ff9600', darkColor: '#c26900' }
+                        { id: 'shop', label: 'Shop / Restaurant (दुकान / भोजनालय)', icon: Store, activeColor: '#58cc02', darkColor: '#58a700' },
+                        { id: 'ngo', label: 'NGO / Ashram (आश्रम / संस्था)', icon: Building2, activeColor: '#1cb0f6', darkColor: '#1899d6' },
+                        { id: 'volunteer', label: 'Volunteer Courier (सेवादार कूरियर)', icon: Bike, activeColor: '#ff9600', darkColor: '#c26900' }
                       ].map(tab => {
                         const Icon = tab.icon;
                         const isSelected = signupRole === tab.id;
@@ -747,10 +747,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     <div>
                       <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
                         {signupRole === 'shop'
-                          ? (isHindi ? 'दुकान / प्रतिष्ठान का नाम *' : 'Establishment / Shop Name *')
+                          ? 'Establishment / Shop Name (दुकान / प्रतिष्ठान का नाम) *'
                           : signupRole === 'ngo'
-                          ? (isHindi ? 'आश्रम / एनजीओ का नाम *' : 'Ashram / NGO Name *')
-                          : (isHindi ? 'सेवादार का पूरा नाम *' : 'Volunteer Full Name *')}
+                            ? 'Ashram / NGO Name (आश्रम / संस्था का नाम) *'
+                            : 'Volunteer Full Name (सेवादार का पूरा नाम) *'}
                       </label>
                       <input
                         type="text"
@@ -758,10 +758,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                         className="form-input"
                         placeholder={
                           signupRole === 'shop'
-                            ? 'उदा. बृजवासी पेड़ा व मिष्ठान भंडार'
+                            ? 'e.g. Brijwasi Sweets / उदा. बृजवासी पेड़ा व मिष्ठान भंडार'
                             : signupRole === 'ngo'
-                            ? 'उदा. श्री राधा कृपा धाम वृद्धाश्रम'
-                            : 'उदा. रोहित शर्मा'
+                              ? 'e.g. Shri Radha Kripa Dham / उदा. श्री राधा कृपा धाम'
+                              : 'e.g. Rohit Sharma / उदा. रोहित शर्मा'
                         }
                         value={orgName}
                         onChange={e => setOrgName(e.target.value)}
@@ -774,7 +774,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         <div>
                           <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                            {signupRole === 'shop' ? 'प्रतिष्ठान श्रेणी' : 'संस्था का उद्देश्य'}
+                            {signupRole === 'shop' ? 'Establishment Category (प्रतिष्ठान श्रेणी) *' : 'Organization Mission (संस्था का उद्देश्य) *'}
                           </label>
                           <select
                             className="form-input"
@@ -784,16 +784,16 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                           >
                             {signupRole === 'shop' ? (
                               <>
-                                <option value="Pure Veg Traditional Bhojanalaya">पारंपरिक भोजनालय</option>
-                                <option value="Sweets & Bakers">मिष्ठान व बेकरी</option>
-                                <option value="Restaurant & Catering">रेस्टोरेंट व कैटरर्स</option>
-                                <option value="Temple Prasadam Kitchen">मंदिर रसोई / अन्नक्षेत्र</option>
+                                <option value="Pure Veg Traditional Bhojanalaya">पारंपरिक भोजनालय (Traditional Bhojanalaya)</option>
+                                <option value="Sweets & Bakers">मिष्ठान व बेकरी (Sweets & Bakery)</option>
+                                <option value="Restaurant & Catering">रेस्टोरेंट व कैटरर्स (Restaurant & Caterers)</option>
+                                <option value="Temple Prasadam Kitchen">मंदिर रसोई व अन्नक्षेत्र (Temple Kitchen)</option>
                               </>
                             ) : (
                               <>
-                                <option value="Elder Care & Widow Shelter">वृद्ध व विधवा आश्रम</option>
-                                <option value="Food Recovery & Distribution">भोजन वितरण संस्था</option>
-                                <option value="Pilgrim Dharamshala">तीर्थयात्री धर्मशाला</option>
+                                <option value="Elder Care & Widow Shelter">वृद्ध व विधवा आश्रम (Elder Care & Shelter)</option>
+                                <option value="Food Recovery & Distribution">भोजन वितरण संस्था (Food Recovery Hub)</option>
+                                <option value="Pilgrim Dharamshala">तीर्थयात्री धर्मशाला (Pilgrim Dharamshala)</option>
                               </>
                             )}
                           </select>
@@ -801,12 +801,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
 
                         <div>
                           <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                            {signupRole === 'shop' ? 'FSSAI लाइसेंस नंबर' : 'दर्पण / ट्रस्ट रजिस्ट्रेशन'}
+                            {signupRole === 'shop' ? 'FSSAI License No. (एफएसएसएआई लाइसेंस नंबर)' : 'Trust / Darpan Reg. (दर्पण / ट्रस्ट पंजीकरण)'}
                           </label>
                           <input
                             type="text"
                             className="form-input"
-                            placeholder={signupRole === 'shop' ? '14-अंकीय FSSAI नंबर' : 'ट्रस्ट पंजीकरण संख्या'}
+                            placeholder={signupRole === 'shop' ? '14-Digit FSSAI No. (उदा. 12723056000412)' : 'Trust Reg / Darpan ID (उदा. UP/2024/0018)'}
                             value={licenseNumber}
                             onChange={e => setLicenseNumber(e.target.value)}
                             style={{ height: '42px', fontSize: '0.82rem' }}
@@ -816,10 +816,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     )}
 
                     {/* City and Address */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '10px' }}>
                       <div>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                          {isHindi ? 'नगर' : 'City'}
+                          City / नगर *
                         </label>
                         <select
                           className="form-input"
@@ -827,21 +827,21 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                           onChange={e => setCity(e.target.value as any)}
                           style={{ height: '42px', fontSize: '0.82rem' }}
                         >
-                          <option value="Vrindavan">वृन्दावन</option>
-                          <option value="Mathura">मथुरा</option>
-                          <option value="Barsana">बरसाना</option>
+                          <option value="Vrindavan">Vrindavan (वृन्दावन)</option>
+                          <option value="Mathura">Mathura (मथुरा)</option>
+                          <option value="Barsana">Barsana (बरसाना)</option>
                         </select>
                       </div>
 
                       <div>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                          {isHindi ? 'पता / क्षेत्र *' : 'Address / Zone *'}
+                          Address & Landmark (पूरा पता व लैंडमार्क) *
                         </label>
                         <input
                           type="text"
                           required
                           className="form-input"
-                          placeholder={isHindi ? 'उदा. रमण रेती रोड, वृन्दावन' : 'e.g. Raman Reti Road, Vrindavan'}
+                          placeholder="e.g. Raman Reti Road, Vrindavan / उदा. रमण रेती रोड"
                           value={address}
                           onChange={e => setAddress(e.target.value)}
                           style={{ height: '42px', fontSize: '0.82rem' }}
@@ -853,7 +853,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                       <div>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                          {signupRole === 'volunteer' ? 'वाहन प्रकार' : (isHindi ? 'प्रभारी का नाम *' : 'Contact Person *')}
+                          {signupRole === 'volunteer' ? 'Vehicle Type (वाहन प्रकार) *' : 'Contact Person (प्रभारी का नाम) *'}
                         </label>
                         {signupRole === 'volunteer' ? (
                           <select
@@ -862,17 +862,17 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                             onChange={e => setVehicleType(e.target.value)}
                             style={{ height: '42px', fontSize: '0.82rem' }}
                           >
-                            <option value="Motorcycle">मोटरसाइकिल</option>
-                            <option value="Scooter">स्कूटर</option>
-                            <option value="E-Rickshaw">ई-रिक्शा</option>
-                            <option value="Bicycle">साइकिल</option>
+                            <option value="Motorcycle">Motorcycle (मोटरसाइकिल)</option>
+                            <option value="Scooter">Scooter (स्कूटर)</option>
+                            <option value="E-Rickshaw">E-Rickshaw (ई-रिक्शा)</option>
+                            <option value="Bicycle">Bicycle (साइकिल)</option>
                           </select>
                         ) : (
                           <input
                             type="text"
                             required
                             className="form-input"
-                            placeholder="प्रभारी नाम"
+                            placeholder="e.g. Radheshyam Sharma / उदा. राधेश्याम शर्मा"
                             value={contactPerson}
                             onChange={e => setContactPerson(e.target.value)}
                             style={{ height: '42px', fontSize: '0.82rem' }}
@@ -882,7 +882,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
 
                       <div>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                          {isHindi ? 'मोबाइल नंबर (10 अंक) *' : 'Mobile Number (10 Digits) *'}
+                          Mobile Number (10 Digits) / मोबाइल नंबर (10 अंक) *
                         </label>
                         <div style={{
                           display: 'flex',
@@ -923,13 +923,13 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     {/* Security PIN / Password */}
                     <div>
                       <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                        {isHindi ? 'लॉगिन पासवर्ड / सुरक्षा पिन बनाएं *' : 'Set Password / PIN *'}
+                        Set Password / Security PIN (सुरक्षा पिन / पासवर्ड बनाएं) *
                       </label>
                       <input
                         type="password"
                         required
                         className="form-input"
-                        placeholder="कम से कम 4 अंक"
+                        placeholder="Enter 4-digit PIN / कम से कम 4 अंक"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         style={{ height: '42px', fontSize: '0.82rem' }}
@@ -951,10 +951,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                     >
                       <span>
                         {signupRole === 'shop'
-                          ? (isHindi ? 'दुकानदार खाता पंजीकृत करें' : 'Register Shop & Open Dashboard')
+                          ? 'Register Shop & Open Dashboard / दुकानदार खाता पंजीकृत करें'
                           : signupRole === 'ngo'
-                          ? (isHindi ? 'आश्रम/एनजीओ पंजीकृत करें' : 'Register NGO & Open Hub')
-                          : (isHindi ? 'सेवादार खाता पंजीकृत करें' : 'Register as Courier Rider')}
+                            ? 'Register NGO & Open Hub / आश्रम व एनजीओ पंजीकृत करें'
+                            : 'Register as Courier Rider / सेवादार कूरियर खाता बनाएं'}
                       </span>
                       <ArrowRight size={18} />
                     </button>
@@ -962,7 +962,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
 
                   <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      {isHindi ? 'पहले से पंजीकृत हैं? ' : 'Already registered? '}
+                      Already registered? (खाता पहले से बना है?) 
                     </span>
                     <button
                       type="button"
@@ -977,7 +977,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onSelectPortal }) => {
                         textDecoration: 'underline'
                       }}
                     >
-                      {isHindi ? 'यहाँ लॉगिन करें' : 'Sign In Here'}
+                      Sign In Here / यहाँ लॉगिन करें
                     </button>
                   </div>
                 </div>
